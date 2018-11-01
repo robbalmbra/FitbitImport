@@ -39,6 +39,7 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+// Get current date and minus noOfDays from it
 -(NSString *)calcDate:(int) noOfDays {
     // Get current datetime
     NSDate *currentDateTime = [NSDate date];
@@ -61,6 +62,7 @@
     return date;
 }
 
+// Get current date
 -(NSString *)dateNow{
     // Get current datetime
     NSDate *currentDateTime = [NSDate date];
@@ -83,16 +85,19 @@
     [fitbitAuthHandler login:self];
 }
 
+// Get user profile in json format
 - (IBAction)actionGetProfile:(UIButton *)sender {
     NSString *token = [FitbitAuthHandler getToken];
     
+    // Create unique http address to API and execute
     FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-    //********** Pass your API here and get details in response **********
     NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/profile.json"] ;
-
     [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
-        // ------ response -----
-        resultView.text = [responseObject description];
+        // Update interface with message
+        resultView.text = @"Parsing Profile ...";
+        
+        // Date object containing json code
+        //data = [responseObject description] //todo
         
     } failure:^(NSError *error) {
         NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
@@ -114,7 +119,7 @@
     }
 }
 
-//get recent 10 days sleep data and insert into HealthKit
+// Get recent 10 days sleep data and insert into HealthKit
 - (IBAction)actionGetSleep:(UIButton *)sender {
     NSString *token = [FitbitAuthHandler getToken];
     FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
@@ -122,14 +127,18 @@
     // Day offset
     int noOfDays = 10;
     
-    // Return now minus noOfDays to startDate and return now to enddate
+    // Return date now minus noOfDays to startDate and return now to enddate
     NSString *startDate = [self calcDate:noOfDays];
     NSString *endDate = [self dateNow];
 
-    //create unique http address to API and execute
+    // Create unique http address to API and execute
     NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
     [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
+        
+        // Update interface with message
         resultView.text = @"Importing sleep data...";
+
+        // Date object containing json code
         //data = [responseObject description] //todo
         
         //test and parse data here
