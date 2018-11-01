@@ -39,6 +39,45 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+-(NSString *)calcDate:(int) noOfDays {
+    // Get current datetime
+    NSDate *currentDateTime = [NSDate date];
+    
+    // Instantiate a NSDateFormatter
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    
+    // Set the dateFormatter format
+    [dateFormatter setDateFormat:@"yyyy-MM-dd"];
+    
+    // Get the date in dateFormatter format
+    NSString *dateInString = [dateFormatter stringFromDate:currentDateTime];
+    NSDate *selectedTime = [dateFormatter dateFromString:dateInString];
+    
+    // Minus noOfDays from current date and convert to NSSString
+    NSDate *myTime = [selectedTime dateByAddingTimeInterval:-noOfDays*24*60*60];
+    NSString *date = [dateFormatter stringFromDate:myTime];
+    
+    // Return
+    return date;
+}
+
+-(NSString *)dateNow{
+    // Get current datetime
+    NSDate *currentDateTime = [NSDate date];
+    
+    // Instantiate a NSDateFormatter
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    
+    // Set the dateFormatter format
+    [dateFormatter setDateFormat:@"yyyy-MM-dd"];
+    
+    // Get the date in NSString for both start and stop time
+    NSString *date = [dateFormatter stringFromDate:currentDateTime];
+    
+    // Return
+    return date;
+}
+
 
 - (IBAction)actionLogin:(UIButton *)sender {
     [fitbitAuthHandler login:self];
@@ -80,22 +119,13 @@
     NSString *token = [FitbitAuthHandler getToken];
     FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
     
-    // Get current datetime
-    NSDate *currentDateTime = [NSDate date];
+    // Day offset
+    int noOfDays = 10;
     
-    // Instantiate a NSDateFormatter
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    
-    // Set the dateFormatter format
-    [dateFormatter setDateFormat:@"yyyy-MM-dd"];
-    
-    // Get the date in NSString for both start and stop time
-    NSString *dateInString = [dateFormatter stringFromDate:currentDateTime];
-    NSDate* selectedTime = [dateFormatter dateFromString:dateInString];
-    NSDate* myTime = [selectedTime dateByAddingTimeInterval:-10*24*60*60]; //10 days deduction
-    NSString* startDate = [dateFormatter stringFromDate:myTime];
-    NSString *endDate = dateInString;
-    
+    // Return now minus noOfDays to startDate and return now to enddate
+    NSString *startDate = [self calcDate:noOfDays];
+    NSString *endDate = [self dateNow];
+
     //create unique http address to API and execute
     NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
     [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
