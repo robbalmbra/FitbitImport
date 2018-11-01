@@ -12,7 +12,6 @@
 
 
 - (IBAction)actionLogin:(UIButton *)sender;
-- (IBAction)actionGetSleep:(UIButton *)sender;
 - (IBAction)actionRevokeAccess:(UIButton *)sender;
 @end
 

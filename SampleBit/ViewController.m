@@ -16,13 +16,15 @@
 {
     FitbitAuthHandler *fitbitAuthHandler;
     __weak IBOutlet UITextView *resultView;
+    NSString *JsonOutput;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     fitbitAuthHandler = [[FitbitAuthHandler alloc]init:self] ;
-    
+ 
+    JsonOutput = @"";
     resultView.layer.borderColor     = [UIColor lightGrayColor].CGColor;
     resultView.layer.borderWidth     = 0.0f;
     [[NSNotificationCenter defaultCenter]
@@ -30,9 +32,46 @@
 
 }
 
+// Generate URLS for dispatch group
+-(NSMutableArray *)generateURL{
+    // url, entity name
+    NSMutableArray *array = [[NSMutableArray alloc] init];
+    
+    /////////////////////////////////////// Add sleep entity to array ///////////////////////////////////////////////////
+    NSString *startDate = [self calcDate:10];
+    NSString *endDate = [self dateNow];
+
+    NSString *url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
+    NSString *entity = [NSString stringWithFormat:@"sleep"];
+    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+
+    ////////////////////////////////////////////// Get step data //////////////////////////////////////////////////////////
+    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/%@.json",startDate, endDate];
+    entity = [NSString stringWithFormat:@"steps"];
+    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    
+    //return array
+    return array;
+}
+
 -(void)notificationDidReceived{
-    //resultView.text = @"Authorization Successfull \nPlease press getProfile to fetch data of fitbit user profile";
+
+    // Initial message, starting to sync
     resultView.text = @"Syncing data started...";
+
+    ////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////////////
+    
+    // Day offset
+    int noOfDays = 10;
+    
+    // Get 10 days prior to date and date now
+    NSString *startDate = [self calcDate:noOfDays];
+    NSString *endDate = [self dateNow];
+    
+    // Create unique http address to API and execute
+    NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
+    NSString *type = @"sleep";
+    [self getFitbitURL: urlString withsecond: type];
 }
 -(void)didReceiveMemoryWarning{
     [super didReceiveMemoryWarning];
@@ -80,6 +119,43 @@
     return date;
 }
 
+// Pass URL and return json from fitbit API
+-(void)getFitbitURL:(NSString *)URL withsecond:(NSString *)entity {
+    
+    __block NSString *responseJson = nil;
+    
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_group_enter(group);
+    
+    NSString *token = [FitbitAuthHandler getToken];
+    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
+    
+    // Create unique http address to API and execute
+    NSString *urlString = [NSString stringWithFormat:@"%@", URL] ;
+    [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
+        
+        // Update interface with message, passed from entity
+        self->resultView.text = [[@"Importing " stringByAppendingString:entity] stringByAppendingString:@" data..."];
+        responseJson = [responseObject description];
+        dispatch_group_leave(group);
+        
+    } failure:^(NSError *error) {
+        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
+        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
+        NSArray *errors = [errorResponse valueForKey:@"errors"];
+        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
+        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
+            // To perform login if token is expired
+            [self->fitbitAuthHandler login:self];
+        }
+        dispatch_group_leave(group);
+    }];
+    
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        NSLog(@"All done");
+    });
+    NSLog(@"test");
+}
 
 - (IBAction)actionLogin:(UIButton *)sender {
     [fitbitAuthHandler login:self];
@@ -94,7 +170,7 @@
     NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/profile.json"] ;
     [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
         // Update interface with message
-        resultView.text = @"Parsing Profile ...";
+        self->resultView.text = @"Parsing Profile ...";
         
         // Date object containing json code
         //data = [responseObject description] //todo
@@ -106,7 +182,7 @@
         NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
         if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
             // To perform login if token is expired
-            [fitbitAuthHandler login:self];
+            [self->fitbitAuthHandler login:self];
         }
     }];
 }
@@ -117,41 +193,6 @@
         [fitbitAuthHandler  revokeAccessToken:token];
         resultView.text = @"Please press login to authorize";
     }
-}
-
-// Get recent 10 days sleep data and insert into HealthKit
-- (IBAction)actionGetSleep:(UIButton *)sender {
-    NSString *token = [FitbitAuthHandler getToken];
-    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-    
-    // Day offset
-    int noOfDays = 10;
-    
-    // Return date now minus noOfDays to startDate and return now to enddate
-    NSString *startDate = [self calcDate:noOfDays];
-    NSString *endDate = [self dateNow];
-
-    // Create unique http address to API and execute
-    NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
-    [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
-        
-        // Update interface with message
-        resultView.text = @"Importing sleep data...";
-
-        // Date object containing json code
-        //data = [responseObject description] //todo
-        
-        //test and parse data here
-    } failure:^(NSError *error) {
-        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
-        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
-        NSArray *errors = [errorResponse valueForKey:@"errors"];
-        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
-        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
-            // To perform login if token is expired
-            [fitbitAuthHandler login:self];
-        }
-    }];
 }
 
 @end
