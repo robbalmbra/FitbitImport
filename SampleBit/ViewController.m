@@ -37,7 +37,7 @@
     // url, entity name
     NSMutableArray *array = [[NSMutableArray alloc] init];
     
-    /////////////////////////////////////// Add sleep entity to array ///////////////////////////////////////////////////
+    /////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////
     NSString *startDate = [self calcDate:10];
     NSString *endDate = [self dateNow];
 
@@ -45,12 +45,27 @@
     NSString *entity = [NSString stringWithFormat:@"sleep"];
     [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
 
-    ////////////////////////////////////////////// Get step data //////////////////////////////////////////////////////////
+    //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
     url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/%@.json",startDate, endDate];
     entity = [NSString stringWithFormat:@"steps"];
     [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     
-    //return array
+    ////////////////////////////////////////////// Get floor data //////////////////////////////////////////////////
+    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/%@.json",startDate, endDate];
+    entity = [NSString stringWithFormat:@"floors"];
+    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+
+    ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
+    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/distance/date/%@/%@.json",startDate, endDate];
+    entity = [NSString stringWithFormat:@"distance"];
+    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    
+    ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
+    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/%@.json",startDate, endDate];
+    entity = [NSString stringWithFormat:@"heart"];
+    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    
+    // Return array
     return array;
 }
 
@@ -59,6 +74,8 @@
     // Initial message, starting to sync
     resultView.text = @"Syncing data started...";
 
+    NSLog(@"%@", [self generateURL]); //debug
+    
     ////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////////////
     
     // Day offset
