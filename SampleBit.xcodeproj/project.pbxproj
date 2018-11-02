@@ -11,6 +11,7 @@
 		00FB012E1EC468880004C6F9 /* FitbitAuthHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 00FB012B1EC468880004C6F9 /* FitbitAuthHandler.m */; };
 		467060DD660B7E4607416F2D /* libPods-SampleBit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DA7EE1F816B4BA55F14F98CB /* libPods-SampleBit.a */; };
 		A73974312189A8B3001FDC95 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A73974302189A8B3001FDC95 /* HealthKit.framework */; };
+		A74C4B95218BC6AF00C15108 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A74C4B94218BC6AF00C15108 /* SettingsViewController.m */; };
 		AE6142E31E2F2E5200D582DC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E21E2F2E5200D582DC /* main.m */; };
 		AE6142E61E2F2E5200D582DC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E51E2F2E5200D582DC /* AppDelegate.m */; };
 		AE6142E91E2F2E5200D582DC /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E81E2F2E5200D582DC /* ViewController.m */; };
@@ -29,6 +30,8 @@
 		78BF7901C936A9FD330B96C3 /* Pods-SampleBit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SampleBit.debug.xcconfig"; path = "Pods/Target Support Files/Pods-SampleBit/Pods-SampleBit.debug.xcconfig"; sourceTree = "<group>"; };
 		A739742F2189A8B3001FDC95 /* Samplebit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Samplebit.entitlements; sourceTree = "<group>"; };
 		A73974302189A8B3001FDC95 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		A74C4B94218BC6AF00C15108 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
+		A74C4B96218BC75400C15108 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
 		A77A23892188DD47009AD794 /* SampleBit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SampleBit.entitlements; sourceTree = "<group>"; };
 		AE6142DE1E2F2E5200D582DC /* Samplebit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Samplebit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE6142E21E2F2E5200D582DC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -106,6 +109,8 @@
 				AE6142E51E2F2E5200D582DC /* AppDelegate.m */,
 				AE6142E71E2F2E5200D582DC /* ViewController.h */,
 				AE6142E81E2F2E5200D582DC /* ViewController.m */,
+				A74C4B96218BC75400C15108 /* SettingsViewController.h */,
+				A74C4B94218BC6AF00C15108 /* SettingsViewController.m */,
 				AE6142ED1E2F2E5200D582DC /* Assets.xcassets */,
 				AE6142EA1E2F2E5200D582DC /* Main.storyboard */,
 				AE6142EF1E2F2E5200D582DC /* LaunchScreen.storyboard */,
@@ -287,6 +292,7 @@
 				AE6142E91E2F2E5200D582DC /* ViewController.m in Sources */,
 				AE6142E61E2F2E5200D582DC /* AppDelegate.m in Sources */,
 				00FB012D1EC468880004C6F9 /* FitbitAPIManager.m in Sources */,
+				A74C4B95218BC6AF00C15108 /* SettingsViewController.m in Sources */,
 				AE6142E31E2F2E5200D582DC /* main.m in Sources */,
 				00FB012E1EC468880004C6F9 /* FitbitAuthHandler.m in Sources */,
 			);

@@ -16,6 +16,7 @@
 {
     FitbitAuthHandler *fitbitAuthHandler;
     __weak IBOutlet UITextView *resultView;
+    __weak IBOutlet UISwitch *HeartProfileSwitch;
     NSString *JsonOutput;
 }
 
@@ -62,7 +63,7 @@
     
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/%@.json",startDate, endDate];
-    entity = [NSString stringWithFormat:@"heart"];
+    entity = [NSString stringWithFormat:@"heart rate"];
     [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     
     // Return array

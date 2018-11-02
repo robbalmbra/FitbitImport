@@ -9,9 +9,6 @@
 #import <UIKit/UIKit.h>
 
 @interface ViewController : UIViewController
-
-
 - (IBAction)actionLogin:(UIButton *)sender;
 - (IBAction)actionRevokeAccess:(UIButton *)sender;
 @end
-
