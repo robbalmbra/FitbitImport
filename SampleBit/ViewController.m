@@ -16,7 +16,6 @@
 {
     FitbitAuthHandler *fitbitAuthHandler;
     __weak IBOutlet UITextView *resultView;
-    __weak IBOutlet UISwitch *HeartProfileSwitch;
     NSString *JsonOutput;
 }
 
@@ -237,32 +236,6 @@
 
 - (IBAction)actionLogin:(UIButton *)sender {
     [fitbitAuthHandler login:self];
-}
-
-// Get user profile in json format
-- (IBAction)actionGetProfile:(UIButton *)sender {
-    NSString *token = [FitbitAuthHandler getToken];
-    
-    // Create unique http address to API and execute
-    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-    NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/profile.json"] ;
-    [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
-        // Update interface with message
-        self->resultView.text = @"Parsing Profile ...";
-        
-        // Date object containing json code
-        //data = [responseObject description] //todo
-        
-    } failure:^(NSError *error) {
-        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
-        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
-        NSArray *errors = [errorResponse valueForKey:@"errors"];
-        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
-        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
-            // To perform login if token is expired
-            [self->fitbitAuthHandler login:self];
-        }
-    }];
 }
 
 - (IBAction)actionRevokeAccess:(UIButton *)sender {

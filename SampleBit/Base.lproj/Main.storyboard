@@ -111,8 +111,11 @@
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="isb-Y7-tWj" customClass="HeartProfileSwitch">
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="isb-Y7-tWj">
                                                     <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="HRSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="9Mz-g2-v4x"/>
+                                                    </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
@@ -145,6 +148,9 @@
                                                 </label>
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2ab-Bq-Nkl">
                                                     <rect key="frame" x="345" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="SleepSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="OwK-Yu-BzX"/>
+                                                    </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
@@ -168,8 +174,11 @@
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8VT-dL-J2C" customClass="StepsProfileSwitch">
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8VT-dL-J2C">
                                                     <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="StepSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="SD5-VR-IEY"/>
+                                                    </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
@@ -177,6 +186,91 @@
                                                 <constraint firstItem="8VT-dL-J2C" firstAttribute="centerY" secondItem="cal-9r-agB" secondAttribute="centerY" id="MVb-Zu-1UB"/>
                                                 <constraint firstItem="E8a-SB-Ttr" firstAttribute="centerY" secondItem="cal-9r-agB" secondAttribute="centerY" id="w6k-cu-Ag4"/>
                                                 <constraint firstAttribute="trailing" secondItem="8VT-dL-J2C" secondAttribute="trailing" constant="18" id="wGv-US-wXK"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="ex7-9a-TXh">
+                                        <rect key="frame" x="0.0" y="187.33333333333334" width="414" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ex7-9a-TXh" id="6XQ-fw-FSC">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Distance Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eER-jA-2Ct">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="121" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kUe-G4-NWS">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="DistanceSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="uDw-2x-EjL"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="kUe-G4-NWS" firstAttribute="centerY" secondItem="6XQ-fw-FSC" secondAttribute="centerY" id="7pq-UB-EBN"/>
+                                                <constraint firstItem="eER-jA-2Ct" firstAttribute="centerY" secondItem="6XQ-fw-FSC" secondAttribute="centerY" id="W6I-gZ-HLF"/>
+                                                <constraint firstAttribute="trailing" secondItem="kUe-G4-NWS" secondAttribute="trailing" constant="18" id="ePT-81-nbI"/>
+                                                <constraint firstItem="eER-jA-2Ct" firstAttribute="leading" secondItem="6XQ-fw-FSC" secondAttribute="leading" constant="20" id="ioR-9N-fEM"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="mDm-xD-djt">
+                                        <rect key="frame" x="0.0" y="231.33333333333334" width="414" height="44.000000000000028"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="mDm-xD-djt" id="2SP-7A-du3">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Floors Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5ie-zh-6jQ">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="101" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="iWP-hE-cws">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="FloorSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="0tV-Nl-QRa"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="5ie-zh-6jQ" firstAttribute="leading" secondItem="2SP-7A-du3" secondAttribute="leading" constant="20" id="Mcd-JE-knB"/>
+                                                <constraint firstAttribute="trailing" secondItem="iWP-hE-cws" secondAttribute="trailing" constant="18" id="cdR-P6-PFU"/>
+                                                <constraint firstItem="iWP-hE-cws" firstAttribute="centerY" secondItem="2SP-7A-du3" secondAttribute="centerY" id="o4L-gQ-BzI"/>
+                                                <constraint firstItem="5ie-zh-6jQ" firstAttribute="centerY" secondItem="2SP-7A-du3" secondAttribute="centerY" id="qci-yi-qys"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                </cells>
+                            </tableViewSection>
+                            <tableViewSection headerTitle="Options" id="zjc-Pz-Dc1">
+                                <cells>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="NFZ-kB-hbf">
+                                        <rect key="frame" x="0.0" y="331.33333333333337" width="414" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="NFZ-kB-hbf" id="ehU-6B-o9o">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Dark Mode" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gdA-1l-skZ">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="84" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9b-mT-O6S" customClass="HeartProfileSwitch">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="trailing" secondItem="d9b-mT-O6S" secondAttribute="trailing" constant="18" id="bHF-Qk-FyD"/>
+                                                <constraint firstItem="gdA-1l-skZ" firstAttribute="centerY" secondItem="ehU-6B-o9o" secondAttribute="centerY" id="gQ7-Of-H9Z"/>
+                                                <constraint firstItem="gdA-1l-skZ" firstAttribute="leading" secondItem="ehU-6B-o9o" secondAttribute="leading" constant="20" id="wDC-H6-EsQ"/>
+                                                <constraint firstItem="d9b-mT-O6S" firstAttribute="centerY" secondItem="ehU-6B-o9o" secondAttribute="centerY" id="xtQ-ux-3L1"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -191,9 +285,11 @@
                     <tabBarItem key="tabBarItem" systemItem="more" id="ZLh-Ix-XeV"/>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
-                        <outlet property="HeartProfileSwitch" destination="isb-Y7-tWj" id="nCv-58-oRQ"/>
-                        <outlet property="SleepProfileSwitch" destination="2ab-Bq-Nkl" id="PU4-c7-Ixm"/>
-                        <outlet property="StepsProfileSwitch" destination="8VT-dL-J2C" id="yAZ-MP-WJ2"/>
+                        <outlet property="DistanceProfileSwitch" destination="kUe-G4-NWS" id="ek1-fU-2s5"/>
+                        <outlet property="FloorProfileSwitch" destination="iWP-hE-cws" id="9pz-Vy-GP8"/>
+                        <outlet property="HeartProfileSwitch" destination="isb-Y7-tWj" id="dZR-If-Yh0"/>
+                        <outlet property="SleepProfileSwitch" destination="2ab-Bq-Nkl" id="VlK-wi-i1i"/>
+                        <outlet property="StepsProfileSwitch" destination="8VT-dL-J2C" id="PRK-2s-LEU"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="6xi-U6-dBb" userLabel="First Responder" sceneMemberID="firstResponder"/>
