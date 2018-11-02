@@ -20,6 +20,8 @@
     NSString *JsonOutput;
 }
 
+#define AS(A,B)    [(A) stringByAppendingString:(B)]
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
@@ -33,8 +35,13 @@
 
 }
 
+//Processing methods for different activity types
+- (void)ProcessHeartRate{
+    NSLog(@"test123");
+}
+
 // Generate URLS for dispatch group
--(NSMutableArray *)generateURL{
+-(NSMutableArray *)generateURLS{
     // url, entity name
     NSMutableArray *array = [[NSMutableArray alloc] init];
     
@@ -75,7 +82,7 @@
     // Initial message, starting to sync
     resultView.text = @"Syncing data started...";
 
-    NSLog(@"%@", [self generateURL]); //debug
+    //NSLog(@"%@", [self generateURL]); //debug
     
     ////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////////////
     
@@ -87,9 +94,11 @@
     NSString *endDate = [self dateNow];
     
     // Create unique http address to API and execute
-    NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
-    NSString *type = @"sleep";
-    [self getFitbitURL: urlString withsecond: type];
+    //NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
+    //NSString *type = @"sleep";
+    
+    // Loop over all urls
+    [self getFitbitURL];
 }
 -(void)didReceiveMemoryWarning{
     [super didReceiveMemoryWarning];
@@ -137,42 +146,93 @@
     return date;
 }
 
+// Specific methods for processisng activity data
+// Heart Rate
+- (void) ProcessHeartRate:( NSString * ) jsonData
+{
+    //NSLog(@"%@", jsonData);
+}
+
+// Floors walked
+- (void) ProcessFloors:( NSString * ) jsonData
+{
+    //NSLog(@"%@", jsonData);
+}
+
+// Steps
+- (void) ProcessSteps:( NSString * ) jsonData
+{
+    //NSLog(@"%@", jsonData);
+}
+
+// Sleep
+- (void) ProcessSleep:( NSString * ) jsonData
+{
+    //NSLog(@"%@", jsonData);
+}
+
+// Distance
+- (void) ProcessDistance:( NSString * ) jsonData
+{
+    //NSLog(@"%@", jsonData);
+}
+
 // Pass URL and return json from fitbit API
--(void)getFitbitURL:(NSString *)URL withsecond:(NSString *)entity {
-    
-    __block NSString *responseJson = nil;
-    
+-(void)getFitbitURL{
     dispatch_group_t group = dispatch_group_create();
-    dispatch_group_enter(group);
     
-    NSString *token = [FitbitAuthHandler getToken];
-    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-    
-    // Create unique http address to API and execute
-    NSString *urlString = [NSString stringWithFormat:@"%@", URL] ;
-    [manager requestGET:urlString Token:token success:^(NSDictionary *responseObject) {
+    NSMutableArray *URLS = [self generateURLS];
+    for (NSMutableArray *entity in URLS){
         
-        // Update interface with message, passed from entity
-        self->resultView.text = [[@"Importing " stringByAppendingString:entity] stringByAppendingString:@" data..."];
-        responseJson = [responseObject description];
-        dispatch_group_leave(group);
+        // Retrieve url and activity type
+        NSString *url = entity[0];
+        __block NSString *type = entity[1];
         
-    } failure:^(NSError *error) {
-        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
-        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
-        NSArray *errors = [errorResponse valueForKey:@"errors"];
-        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
-        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
-            // To perform login if token is expired
-            [self->fitbitAuthHandler login:self];
-        }
-        dispatch_group_leave(group);
-    }];
-    
+        // Enter group
+        dispatch_group_enter(group);
+
+        NSString *token = [FitbitAuthHandler getToken];
+        FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
+
+        // Get URL
+        [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
+            
+            // Update interface with message, passed from entity
+            self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
+            
+            // Pass data to individual methods for processing
+            NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
+            NSString *methodArgs = AS(methodName,@":");
+            
+            @try{
+                // Retrieve method for selected activity
+                SEL doubleParamSelector = NSSelectorFromString(methodArgs);
+                [self performSelector: doubleParamSelector withObject: [responseObject description]];
+            }
+            @catch (NSException *exception){
+                // Catch if failed
+                NSLog(@"Error - Failed to find method");
+            }
+
+            // Leave group
+            dispatch_group_leave(group);
+            
+        } failure:^(NSError *error) {
+            NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
+            NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
+            NSArray *errors = [errorResponse valueForKey:@"errors"];
+            NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
+            if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
+                // To perform login if token is expired
+                [self->fitbitAuthHandler login:self];
+            }
+            dispatch_group_leave(group);
+        }];
+    }
+
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-        NSLog(@"All done");
+        self->resultView.text = @"Sync Complete";
     });
-    NSLog(@"test");
 }
 
 - (IBAction)actionLogin:(UIButton *)sender {
