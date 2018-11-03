@@ -112,18 +112,25 @@
         self.view.backgroundColor = [UIColor whiteColor];
         resultView.backgroundColor = [UIColor whiteColor];
         resultView.textColor = [UIColor blackColor];
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
+        
     }else  if (switchState == false) {
         // Turned off
         darkModeSwitch = 0;
         self.view.backgroundColor = [UIColor whiteColor];
         resultView.backgroundColor = [UIColor whiteColor];
         resultView.textColor = [UIColor blackColor];
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else{
         // Turned on
         self.view.backgroundColor = [UIColor blackColor];
         resultView.backgroundColor = [UIColor blackColor];
         resultView.textColor = [UIColor whiteColor];
         darkModeSwitch = 1;
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
 }
 

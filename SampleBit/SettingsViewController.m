@@ -6,9 +6,9 @@
 //  Copyright © 2018 insanelydeepak. All rights reserved.
 //
 
-#import "ViewController.h"
+#import "SettingsViewController.h"
 #import "FitbitExplorer.h"
-@interface SettingsViewController : UITableViewController
+@interface SettingsViewController ()
 
 @end
 
@@ -34,6 +34,8 @@
     __weak IBOutlet UILabel *FloorsSwitchText;
     __weak IBOutlet UIView *DarkModeSwitchUI;
     __weak IBOutlet UILabel *DarkModeSwitchText;
+    __weak IBOutlet UITabBarItem *navigationBar;
+    __weak IBOutlet UILabel *SettingsLabel;
     FitbitAuthHandler *fitbitAuthHandler;
 }
 
@@ -77,6 +79,10 @@
         FloorsSwitchText.textColor = [UIColor whiteColor];
         DarkModeSwitchUI.backgroundColor = [UIColor blackColor];
         DarkModeSwitchText.textColor = [UIColor whiteColor];
+        SettingsLabel.textColor = [UIColor whiteColor];
+        
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else{
         // Off
         self.view.backgroundColor = [UIColor whiteColor];
@@ -94,6 +100,10 @@
         FloorsSwitchText.textColor = [UIColor blackColor];
         DarkModeSwitchUI.backgroundColor = [UIColor whiteColor];
         DarkModeSwitchText.textColor = [UIColor blackColor];
+        SettingsLabel.textColor = [UIColor blackColor];
+        
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
 }
 
@@ -167,6 +177,10 @@
         FloorsSwitchText.textColor = [UIColor blackColor];
         DarkModeSwitchUI.backgroundColor = [UIColor whiteColor];
         DarkModeSwitchText.textColor = [UIColor blackColor];
+        SettingsLabel.textColor = [UIColor blackColor];
+        
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else if (switchState == false) {
         [DarkModeSwitch setOn:NO];
         self.view.backgroundColor = [UIColor whiteColor];
@@ -184,6 +198,10 @@
         FloorsSwitchText.textColor = [UIColor blackColor];
         DarkModeSwitchUI.backgroundColor = [UIColor whiteColor];
         DarkModeSwitchText.textColor = [UIColor blackColor];
+        SettingsLabel.textColor = [UIColor blackColor];
+
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else{
         [DarkModeSwitch setOn:YES];
         self.view.backgroundColor = [UIColor blackColor];
@@ -201,6 +219,10 @@
         FloorsSwitchText.textColor = [UIColor whiteColor];
         DarkModeSwitchUI.backgroundColor = [UIColor blackColor];
         DarkModeSwitchText.textColor = [UIColor whiteColor];
+        SettingsLabel.textColor = [UIColor whiteColor];
+
+        self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
+        self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
 }
 
