@@ -108,12 +108,21 @@
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
         // No set
-        darkModeSwitch = 1;
+        darkModeSwitch = 0;
+        self.view.backgroundColor = [UIColor whiteColor];
+        resultView.backgroundColor = [UIColor whiteColor];
+        resultView.textColor = [UIColor blackColor];
     }else  if (switchState == false) {
         // Turned off
         darkModeSwitch = 0;
+        self.view.backgroundColor = [UIColor whiteColor];
+        resultView.backgroundColor = [UIColor whiteColor];
+        resultView.textColor = [UIColor blackColor];
     }else{
         // Turned on
+        self.view.backgroundColor = [UIColor blackColor];
+        resultView.backgroundColor = [UIColor blackColor];
+        resultView.textColor = [UIColor whiteColor];
         darkModeSwitch = 1;
     }
 }
@@ -226,7 +235,7 @@
     return date;
 }
 
-// Specific methods for processisng activity data
+// Specific methods for processisng activity data types
 // Heart Rate
 - (void) ProcessHeartRate:( NSString * ) jsonData
 {

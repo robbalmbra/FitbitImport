@@ -91,21 +91,21 @@
         <scene sceneID="xda-Nu-4p4">
             <objects>
                 <tableViewController id="YNg-mf-tmN" customClass="SettingsViewController" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="grouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" id="0Ax-an-0Su">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="grouped" separatorStyle="singleLineEtched" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" id="0Ax-an-0Su" customClass="settingsView">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="736"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
                         <sections>
                             <tableViewSection headerTitle="Sync Settings" id="cmu-SQ-a3X">
                                 <cells>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="UHq-7S-ZSK">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="UHq-7S-ZSK" customClass="syncsettings">
                                         <rect key="frame" x="0.0" y="55.333333333333343" width="414" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="UHq-7S-ZSK" id="Yah-Sg-sZI">
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="UHq-7S-ZSK" id="Yah-Sg-sZI" customClass="HeartRateSwitch">
                                             <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Heart Rate Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2Bm-Lp-euo">
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Heart Rate Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2Bm-Lp-euo" customClass="HeartRateSwitchText">
                                                     <rect key="frame" x="20" y="11.333333333333336" width="136" height="21"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="textColor"/>
@@ -289,11 +289,25 @@
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="DarkModeSwitch" destination="d9b-mT-O6S" id="qA3-Eq-h8l"/>
+                        <outlet property="DarkModeSwitchText" destination="gdA-1l-skZ" id="qIn-Ii-0xd"/>
+                        <outlet property="DarkModeSwitchUI" destination="ehU-6B-o9o" id="yjC-17-YAD"/>
                         <outlet property="DistanceProfileSwitch" destination="kUe-G4-NWS" id="ek1-fU-2s5"/>
+                        <outlet property="DistanceSwitchText" destination="eER-jA-2Ct" id="hm6-9B-vDH"/>
+                        <outlet property="DistanceSwitchUI" destination="6XQ-fw-FSC" id="2aY-Km-quR"/>
                         <outlet property="FloorProfileSwitch" destination="iWP-hE-cws" id="9pz-Vy-GP8"/>
+                        <outlet property="FloorsSwitchText" destination="5ie-zh-6jQ" id="9mR-nx-ACw"/>
+                        <outlet property="FloorsSwitchUI" destination="2SP-7A-du3" id="hxJ-4O-wvR"/>
                         <outlet property="HeartProfileSwitch" destination="isb-Y7-tWj" id="dZR-If-Yh0"/>
+                        <outlet property="HeartRateSwitchText" destination="2Bm-Lp-euo" id="Ii9-js-G7J"/>
+                        <outlet property="HeartRateSwitchUI" destination="Yah-Sg-sZI" id="gWm-tr-DW1"/>
                         <outlet property="SleepProfileSwitch" destination="2ab-Bq-Nkl" id="VlK-wi-i1i"/>
+                        <outlet property="SleepSwitchText" destination="mE4-Ld-EK6" id="2kg-tz-PMC"/>
+                        <outlet property="SleepSwitchUI" destination="fXN-Wh-DO2" id="0WS-4U-Taz"/>
                         <outlet property="StepsProfileSwitch" destination="8VT-dL-J2C" id="PRK-2s-LEU"/>
+                        <outlet property="StepsSwitchText" destination="E8a-SB-Ttr" id="GyA-Bh-2gC"/>
+                        <outlet property="StepsSwitchUI" destination="cal-9r-agB" id="zgq-oc-rkN"/>
+                        <outlet property="settingsView" destination="0Ax-an-0Su" id="DXS-wB-aTg"/>
+                        <outlet property="syncsettings" destination="cmu-SQ-a3X" id="1Bb-bL-C5c"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="6xi-U6-dBb" userLabel="First Responder" sceneMemberID="firstResponder"/>

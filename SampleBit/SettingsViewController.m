@@ -20,6 +20,20 @@
     __weak IBOutlet UISwitch *DistanceProfileSwitch;
     __weak IBOutlet UISwitch *FloorProfileSwitch;
     __weak IBOutlet UISwitch *DarkModeSwitch;
+    __weak IBOutlet UITableView *settingsView;
+    __weak IBOutlet UITableViewCell *syncsettings;
+    __weak IBOutlet UIView *HeartRateSwitchUI;
+    __weak IBOutlet UILabel *HeartRateSwitchText;
+    __weak IBOutlet UIView *SleepSwitchUI;
+    __weak IBOutlet UILabel *SleepSwitchText;
+    __weak IBOutlet UIView *StepsSwitchUI;
+    __weak IBOutlet UILabel *StepsSwitchText;
+    __weak IBOutlet UIView *DistanceSwitchUI;
+    __weak IBOutlet UILabel *DistanceSwitchText;
+    __weak IBOutlet UIView *FloorsSwitchUI;
+    __weak IBOutlet UILabel *FloorsSwitchText;
+    __weak IBOutlet UIView *DarkModeSwitchUI;
+    __weak IBOutlet UILabel *DarkModeSwitchText;
     FitbitAuthHandler *fitbitAuthHandler;
 }
 
@@ -45,6 +59,42 @@
 
 - (IBAction)ProfileSwitch:(UISwitch *)sender {
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"DarkModeSwitch"];
+    
+    if(sender.isOn == true){
+        // On
+        self.view.backgroundColor = [UIColor blackColor];
+        settingsView.backgroundColor = [UIColor blackColor];
+        settingsView.backgroundView.backgroundColor = [UIColor blackColor];
+        HeartRateSwitchUI.backgroundColor = [UIColor blackColor];
+        HeartRateSwitchText.textColor = [UIColor whiteColor];
+        SleepSwitchUI.backgroundColor = [UIColor blackColor];
+        SleepSwitchText.textColor = [UIColor whiteColor];
+        StepsSwitchUI.backgroundColor = [UIColor blackColor];
+        StepsSwitchText.textColor = [UIColor whiteColor];
+        DistanceSwitchUI.backgroundColor = [UIColor blackColor];
+        DistanceSwitchText.textColor = [UIColor whiteColor];
+        FloorsSwitchUI.backgroundColor = [UIColor blackColor];
+        FloorsSwitchText.textColor = [UIColor whiteColor];
+        DarkModeSwitchUI.backgroundColor = [UIColor blackColor];
+        DarkModeSwitchText.textColor = [UIColor whiteColor];
+    }else{
+        // Off
+        self.view.backgroundColor = [UIColor whiteColor];
+        settingsView.backgroundColor = [UIColor whiteColor];
+        settingsView.backgroundView.backgroundColor = [UIColor whiteColor];
+        HeartRateSwitchUI.backgroundColor = [UIColor whiteColor];
+        HeartRateSwitchText.textColor = [UIColor blackColor];
+        SleepSwitchUI.backgroundColor = [UIColor whiteColor];
+        SleepSwitchText.textColor = [UIColor blackColor];
+        StepsSwitchUI.backgroundColor = [UIColor whiteColor];
+        StepsSwitchText.textColor = [UIColor blackColor];
+        DistanceSwitchUI.backgroundColor = [UIColor whiteColor];
+        DistanceSwitchText.textColor = [UIColor blackColor];
+        FloorsSwitchUI.backgroundColor = [UIColor whiteColor];
+        FloorsSwitchText.textColor = [UIColor blackColor];
+        DarkModeSwitchUI.backgroundColor = [UIColor whiteColor];
+        DarkModeSwitchText.textColor = [UIColor blackColor];
+    }
 }
 
 -(void)viewWillAppear:(BOOL)animated
@@ -102,11 +152,55 @@
     // Dark Mode Switch
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
-        [DarkModeSwitch setOn:YES];
+        [DarkModeSwitch setOn:NO];
+        self.view.backgroundColor = [UIColor whiteColor];
+        settingsView.backgroundColor = [UIColor whiteColor];
+        HeartRateSwitchUI.backgroundColor = [UIColor whiteColor];
+        HeartRateSwitchText.textColor = [UIColor blackColor];
+        SleepSwitchUI.backgroundColor = [UIColor whiteColor];
+        SleepSwitchText.textColor = [UIColor blackColor];
+        StepsSwitchUI.backgroundColor = [UIColor whiteColor];
+        StepsSwitchText.textColor = [UIColor blackColor];
+        DistanceSwitchUI.backgroundColor = [UIColor whiteColor];
+        DistanceSwitchText.textColor = [UIColor blackColor];
+        FloorsSwitchUI.backgroundColor = [UIColor whiteColor];
+        FloorsSwitchText.textColor = [UIColor blackColor];
+        DarkModeSwitchUI.backgroundColor = [UIColor whiteColor];
+        DarkModeSwitchText.textColor = [UIColor blackColor];
     }else if (switchState == false) {
         [DarkModeSwitch setOn:NO];
+        self.view.backgroundColor = [UIColor whiteColor];
+        settingsView.backgroundColor = [UIColor whiteColor];
+        settingsView.backgroundView.backgroundColor = [UIColor whiteColor];
+        HeartRateSwitchUI.backgroundColor = [UIColor whiteColor];
+        HeartRateSwitchText.textColor = [UIColor blackColor];
+        SleepSwitchUI.backgroundColor = [UIColor whiteColor];
+        SleepSwitchText.textColor = [UIColor blackColor];
+        StepsSwitchUI.backgroundColor = [UIColor whiteColor];
+        StepsSwitchText.textColor = [UIColor blackColor];
+        DistanceSwitchUI.backgroundColor = [UIColor whiteColor];
+        DistanceSwitchText.textColor = [UIColor blackColor];
+        FloorsSwitchUI.backgroundColor = [UIColor whiteColor];
+        FloorsSwitchText.textColor = [UIColor blackColor];
+        DarkModeSwitchUI.backgroundColor = [UIColor whiteColor];
+        DarkModeSwitchText.textColor = [UIColor blackColor];
     }else{
         [DarkModeSwitch setOn:YES];
+        self.view.backgroundColor = [UIColor blackColor];
+        settingsView.backgroundColor = [UIColor blackColor];
+        settingsView.backgroundView.backgroundColor = [UIColor blackColor];
+        HeartRateSwitchUI.backgroundColor = [UIColor blackColor];
+        HeartRateSwitchText.textColor = [UIColor whiteColor];
+        SleepSwitchUI.backgroundColor = [UIColor blackColor];
+        SleepSwitchText.textColor = [UIColor whiteColor];
+        StepsSwitchUI.backgroundColor = [UIColor blackColor];
+        StepsSwitchText.textColor = [UIColor whiteColor];
+        DistanceSwitchUI.backgroundColor = [UIColor blackColor];
+        DistanceSwitchText.textColor = [UIColor whiteColor];
+        FloorsSwitchUI.backgroundColor = [UIColor blackColor];
+        FloorsSwitchText.textColor = [UIColor whiteColor];
+        DarkModeSwitchUI.backgroundColor = [UIColor blackColor];
+        DarkModeSwitchText.textColor = [UIColor whiteColor];
     }
 }
 
