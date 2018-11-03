@@ -16,7 +16,12 @@
 {
     FitbitAuthHandler *fitbitAuthHandler;
     __weak IBOutlet UITextView *resultView;
-    NSString *JsonOutput;
+    __block BOOL heartRateSwitch;
+    __block BOOL sleepSwitch;
+    __block BOOL stepsSwitch;
+    __block BOOL distanceSwitch;
+    __block BOOL floorsSwitch;
+    __block BOOL darkModeSwitch;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -26,12 +31,91 @@
     // Do any additional setup after loading the view, typically from a nib.
     fitbitAuthHandler = [[FitbitAuthHandler alloc]init:self] ;
  
-    JsonOutput = @"";
     resultView.layer.borderColor     = [UIColor lightGrayColor].CGColor;
     resultView.layer.borderWidth     = 0.0f;
     [[NSNotificationCenter defaultCenter]
      addObserver:self selector:@selector(notificationDidReceived) name:FitbitNotification object:nil];
+}
 
+-(void)viewWillAppear:(BOOL)animated
+{
+    // Heart Rate
+    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"heartSwitch"] == nil) {
+        // No set
+        heartRateSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        heartRateSwitch = 0;
+    }else{
+        // Turned on
+        heartRateSwitch = 1;
+    }
+    
+    // Sleep Rate
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"sleepSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"sleepSwitch"] == nil) {
+        // No set
+        sleepSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        sleepSwitch = 0;
+    }else{
+        // Turned on
+        sleepSwitch = 1;
+    }
+    
+    // Step Rate
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"stepSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"stepSwitch"] == nil) {
+        // No set
+        stepsSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        stepsSwitch = 0;
+    }else{
+        // Turned on
+        stepsSwitch = 1;
+    }
+
+    // Distance Rate
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"distanceSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"distanceSwitch"] == nil) {
+        // No set
+        distanceSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        distanceSwitch = 0;
+    }else{
+        // Turned on
+        distanceSwitch = 1;
+    }
+
+    // Floor Rate
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"floorSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"floorSwitch"] == nil) {
+        // No set
+        floorsSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        floorsSwitch = 0;
+    }else{
+        // Turned on
+        floorsSwitch = 1;
+    }
+
+    // Dark Mode Switch
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
+        // No set
+        darkModeSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        darkModeSwitch = 0;
+    }else{
+        // Turned on
+        darkModeSwitch = 1;
+    }
 }
 
 //Processing methods for different activity types
@@ -43,35 +127,47 @@
 -(NSMutableArray *)generateURLS{
     // url, entity name
     NSMutableArray *array = [[NSMutableArray alloc] init];
-    
+
     /////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////
     NSString *startDate = [self calcDate:10];
     NSString *endDate = [self dateNow];
+    NSString *entity;
+    NSString *url;
 
-    NSString *url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
-    NSString *entity = [NSString stringWithFormat:@"sleep"];
-    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    if(sleepSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
+        entity = [NSString stringWithFormat:@"sleep"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
 
     //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
-    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/%@.json",startDate, endDate];
-    entity = [NSString stringWithFormat:@"steps"];
-    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-    
+    if(stepsSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"steps"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+
     ////////////////////////////////////////////// Get floor data //////////////////////////////////////////////////
-    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/%@.json",startDate, endDate];
-    entity = [NSString stringWithFormat:@"floors"];
-    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    if(floorsSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"floors"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
 
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
-    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/distance/date/%@/%@.json",startDate, endDate];
-    entity = [NSString stringWithFormat:@"distance"];
-    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-    
+    if(distanceSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/distance/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"distance"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
-    url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/%@.json",startDate, endDate];
-    entity = [NSString stringWithFormat:@"heart rate"];
-    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-    
+    if(heartRateSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"heart rate"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+
     // Return array
     return array;
 }
@@ -81,21 +177,6 @@
     // Initial message, starting to sync
     resultView.text = @"Syncing data started...";
 
-    //NSLog(@"%@", [self generateURL]); //debug
-    
-    ////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////////////
-    
-    // Day offset
-    int noOfDays = 10;
-    
-    // Get 10 days prior to date and date now
-    NSString *startDate = [self calcDate:noOfDays];
-    NSString *endDate = [self dateNow];
-    
-    // Create unique http address to API and execute
-    //NSString *urlString = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate] ;
-    //NSString *type = @"sleep";
-    
     // Loop over all urls
     [self getFitbitURL];
 }
