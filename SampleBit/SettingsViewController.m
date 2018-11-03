@@ -19,6 +19,7 @@
     __weak IBOutlet UISwitch *StepsProfileSwitch;
     __weak IBOutlet UISwitch *DistanceProfileSwitch;
     __weak IBOutlet UISwitch *FloorProfileSwitch;
+    __weak IBOutlet UISwitch *DarkModeSwitch;
     FitbitAuthHandler *fitbitAuthHandler;
 }
 
@@ -42,9 +43,13 @@
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"floorSwitch"];
 }
 
+- (IBAction)ProfileSwitch:(UISwitch *)sender {
+    [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"DarkModeSwitch"];
+}
+
 -(void)viewWillAppear:(BOOL)animated
 {
-    // Heart Rate Switch
+    // Heart Rate Switch - Change switch state from NSUserDefaults
     BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"heartSwitch"] == nil) {
         [HeartProfileSwitch setOn:YES];
@@ -53,7 +58,7 @@
     }else{
         [HeartProfileSwitch setOn:YES];
     }
-    
+
     // Sleep Switch
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"sleepSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"sleepSwitch"] == nil) {
@@ -63,7 +68,7 @@
     }else{
         [SleepProfileSwitch setOn:YES];
     }
-    
+
     // Step Switch
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"stepSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"stepSwitch"] == nil) {
@@ -92,6 +97,16 @@
         [FloorProfileSwitch setOn:NO];
     }else{
         [FloorProfileSwitch setOn:YES];
+    }
+
+    // Dark Mode Switch
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
+        [DarkModeSwitch setOn:YES];
+    }else if (switchState == false) {
+        [DarkModeSwitch setOn:NO];
+    }else{
+        [DarkModeSwitch setOn:YES];
     }
 }
 

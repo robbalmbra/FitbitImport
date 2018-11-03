@@ -262,8 +262,11 @@
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9b-mT-O6S" customClass="HeartProfileSwitch">
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9b-mT-O6S">
                                                     <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="ProfileSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="dU4-F5-5jc"/>
+                                                    </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
@@ -285,6 +288,7 @@
                     <tabBarItem key="tabBarItem" systemItem="more" id="ZLh-Ix-XeV"/>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="DarkModeSwitch" destination="d9b-mT-O6S" id="qA3-Eq-h8l"/>
                         <outlet property="DistanceProfileSwitch" destination="kUe-G4-NWS" id="ek1-fU-2s5"/>
                         <outlet property="FloorProfileSwitch" destination="iWP-hE-cws" id="9pz-Vy-GP8"/>
                         <outlet property="HeartProfileSwitch" destination="isb-Y7-tWj" id="dZR-If-Yh0"/>
