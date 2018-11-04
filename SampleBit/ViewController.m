@@ -178,8 +178,9 @@
     }
 
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
+    
     if(heartRateSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/%@.json",startDate, endDate];
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1sec.json",endDate];
         entity = [NSString stringWithFormat:@"heart rate"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -242,35 +243,109 @@
     return date;
 }
 
+
+
 // Specific methods for processisng activity data types
 // Heart Rate
-- (void) ProcessHeartRate:( NSString * ) jsonData
+- (void) ProcessHeartRate:( NSDictionary * ) jsonData
 {
-    //NSLog(@"%@", jsonData);
+    // Access root container - resting heart rate
+    NSArray * out = [jsonData objectForKey:@"activities-heart"];
+    NSDictionary * block = out[0];
+    NSDictionary * block2 = [block objectForKey:@"value"];
+    NSString * restingHR = [block2 objectForKey:@"restingHeartRate"];
+    
+    //NSLog(@"%@", restingHR); //today
+    
+    //Interday time series with 1sec resolution for heart rate
+    NSDictionary * out2 = [jsonData objectForKey:@"activities-heart-intraday"];
+    NSArray *out3 = [out2 objectForKey:@"dataset"];
+    
+    for(NSDictionary * entry in out3){
+        NSString * time = [entry objectForKey:@"time"]; //Time
+        NSString * value = [entry objectForKey:@"value"]; //Heart Rate
+        //NSLog(@"%@", time);
+        //NSLog(@"%@", value);
+    }
+    
+    //Add to Health Kit - TODO
 }
 
 // Floors walked
-- (void) ProcessFloors:( NSString * ) jsonData
+- (void) ProcessFloors:( NSDictionary * ) jsonData
 {
-    //NSLog(@"%@", jsonData);
+    // Access root container
+    NSArray * out = [jsonData objectForKey:@"activities-floors"];
+    
+    // Access day container
+    for(int i=0; i< ([out count]); i++){
+        NSDictionary *block = out[i];
+        NSString * floors = [block objectForKey:@"value"]; //floor count
+        NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
+        
+        //NSLog(@"%@", floors);
+        //NSLog(@"%@", date);
+    }
+    
+    //Add to Health Kit - TODO
 }
 
 // Steps
-- (void) ProcessSteps:( NSString * ) jsonData
+- (void) ProcessSteps:( NSDictionary * ) jsonData
 {
-    //NSLog(@"%@", jsonData);
+    // Access root container
+    NSArray * out = [jsonData objectForKey:@"activities-steps"];
+    
+    // Access day container
+    for(int i=0; i< ([out count]); i++){
+        NSDictionary *block = out[i];
+        NSString * steps = [block objectForKey:@"value"]; //step count
+        NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
+        
+        //NSLog(@"%@", steps);
+        //NSLog(@"%@", date);
+    }
+
+    //Add to Health Kit - TODO
+    
 }
 
 // Sleep
-- (void) ProcessSleep:( NSString * ) jsonData
+- (void) ProcessSleep:( NSDictionary * ) jsonData
 {
-    //NSLog(@"%@", jsonData);
+    // Access root container
+    NSArray * out = [jsonData objectForKey:@"sleep"];
+    
+    // Access day container
+    for(int i=0; i< ([out count]); i++){
+        NSDictionary *block = out[i];
+        NSString * duration = [block objectForKey:@"duration"]; //duration in milliseconds
+        NSString * date = [block objectForKey:@"dateOfSleep"]; //date - YYYY-MM-DD
+
+        //NSLog(@"%@", duration);
+        //NSLog(@"%@", date);
+    }
+    
+    //Add to Health Kit - TODO
 }
 
 // Distance
-- (void) ProcessDistance:( NSString * ) jsonData
+- (void) ProcessDistance:( NSDictionary * ) jsonData
 {
-    //NSLog(@"%@", jsonData);
+    // Access root container
+    NSArray * out = [jsonData objectForKey:@"activities-distance"];
+    
+    // Access day container
+    for(int i=0; i< ([out count]); i++){
+        NSDictionary *block = out[i];
+        NSString * distance = [block objectForKey:@"value"]; //distance in kilometers
+        NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
+        
+        //NSLog(@"%@", distance);
+        //NSLog(@"%@", date);
+    }
+    
+    //Add to Health Kit - TODO
 }
 
 // Pass URL and return json from fitbit API
@@ -299,11 +374,24 @@
             // Pass data to individual methods for processing
             NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
             NSString *methodArgs = AS(methodName,@":");
+
+            /*int d = sizeof(responseObject);
+            printf("%d",d);
+            
+            for(id element in [responseObject description])
+            {
+                NSLog(@"%@", element);
+                NSLog(@"=======================================");
+                NSLog(@"Is of type: %@", [element class]);
+                NSLog(@"Is of type NSString?: %@", ([[element class] isMemberOfClass:[NSString class]])? @"Yes" : @"No");
+                NSLog(@"Is a kind of NSString: %@", ([[element classForCoder] isSubclassOfClass:[NSString class]])? @"Yes" : @"No");
+            }*/
             
             @try{
                 // Retrieve method for selected activity
+                //self->resultView.text = [responseObject description];
                 SEL doubleParamSelector = NSSelectorFromString(methodArgs);
-                [self performSelector: doubleParamSelector withObject: [responseObject description]];
+                [self performSelector: doubleParamSelector withObject: responseObject];
             }
             @catch (NSException *exception){
                 // Catch if failed
