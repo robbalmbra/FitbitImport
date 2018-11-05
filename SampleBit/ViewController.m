@@ -8,6 +8,8 @@
 
 #import "ViewController.h"
 #import "FitbitExplorer.h"
+@import HealthKit;
+
 @interface ViewController ()
 
 @end
@@ -22,6 +24,9 @@
     __block BOOL distanceSwitch;
     __block BOOL floorsSwitch;
     __block BOOL darkModeSwitch;
+    __block HKHealthStore *hkstore;
+    __block BOOL isRed;
+    __block BOOL isDarkMode;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -109,26 +114,35 @@
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
         // No set
         darkModeSwitch = 0;
+        isDarkMode = 0;
         self.view.backgroundColor = [UIColor whiteColor];
         resultView.backgroundColor = [UIColor whiteColor];
-        resultView.textColor = [UIColor blackColor];
+        if(isRed == 0){
+            resultView.textColor = [UIColor blackColor];
+        }
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
         
     }else  if (switchState == false) {
         // Turned off
         darkModeSwitch = 0;
+        isDarkMode = 0;
         self.view.backgroundColor = [UIColor whiteColor];
         resultView.backgroundColor = [UIColor whiteColor];
-        resultView.textColor = [UIColor blackColor];
+        if(isRed == 0){
+            resultView.textColor = [UIColor blackColor];
+        }
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else{
         // Turned on
         self.view.backgroundColor = [UIColor blackColor];
         resultView.backgroundColor = [UIColor blackColor];
-        resultView.textColor = [UIColor whiteColor];
+        if(isRed == 0){
+            resultView.textColor = [UIColor whiteColor];
+        }
         darkModeSwitch = 1;
+        isDarkMode = 1;
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
@@ -350,6 +364,7 @@
 
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
+    
     dispatch_group_t group = dispatch_group_create();
     
     NSMutableArray *URLS = [self generateURLS];
@@ -420,7 +435,81 @@
 }
 
 - (IBAction)actionLogin:(UIButton *)sender {
-    [fitbitAuthHandler login:self];
+
+    // Write types attributes
+    NSArray *writeTypes = @[
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed]
+                            ];
+    
+    hkstore = [[HKHealthStore alloc] init];
+    [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
+                                        readTypes:nil
+                                        completion:^(BOOL success, NSError * _Nullable error) {
+
+                                            printf("asdf");
+                                            
+        if(!success){
+            printf("You didn't allow HealthKit to access these write data types.\nThe error was:\n \(error!.description).");
+        }else{
+            NSInteger errorCount = 0;
+
+            // Steps Activity
+            HKQuantityType *stepsType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+            errorCount += [self checktype:stepsType];
+
+            // Heart Rate Activity
+            HKQuantityType *heartRateType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
+            errorCount += [self checktype:heartRateType];
+            
+            // Sleep Activity
+            HKQuantityType *floorClimbedType = [HKCategoryType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+            errorCount += [self checktype:floorClimbedType];
+
+            if(errorCount != 0){
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self->resultView.text = @"Please go to Apple Health app, and give access to all the types.";
+                    self->resultView.textColor = [UIColor redColor];
+                    self->isRed = 1;
+                });
+            }else{
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self->resultView.text = @"";
+                    self->isRed = 0;
+                    
+                    if(self->isDarkMode == 1){
+                        self->resultView.textColor = [UIColor whiteColor];
+                    }else{
+                        self->resultView.textColor = [UIColor blackColor];
+                    }
+                });
+                [self->fitbitAuthHandler login:self];
+            }
+        }
+    }];
+}
+
+-(NSInteger)checktype:(HKQuantityType *)status{
+    
+    HKAuthorizationStatus activity = [hkstore authorizationStatusForType:status];
+    
+    NSInteger isActive;
+    switch (activity) {
+        case HKAuthorizationStatusSharingAuthorized:
+            isActive = 0;
+            break;
+        case HKAuthorizationStatusSharingDenied:
+            isActive = 1;
+            break;
+        case HKAuthorizationStatusNotDetermined:
+            isActive = 1;
+            break;
+            
+        default:
+            break;
+    }
+    return isActive;
 }
 
 - (IBAction)actionRevokeAccess:(UIButton *)sender {
