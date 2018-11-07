@@ -148,18 +148,13 @@
     }
 }
 
-//Processing methods for different activity types
-- (void)ProcessHeartRate{
-    NSLog(@"test123");
-}
-
 // Generate URLS for dispatch group
 -(NSMutableArray *)generateURLS{
     // url, entity name
     NSMutableArray *array = [[NSMutableArray alloc] init];
 
     /////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////
-    NSString *startDate = [self calcDate:10];
+    NSString *startDate = [self calcDate:5];
     NSString *endDate = [self dateNow];
     NSString *entity;
     NSString *url;
@@ -192,12 +187,21 @@
     }
 
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
-    
+    //Ten day span
     if(heartRateSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",endDate];
-        entity = [NSString stringWithFormat:@"heart rate"];
+        for(int i=0; i<5; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",dateNow];
+            entity = [NSString stringWithFormat:@"heart rate"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+        
+        // Average walk HR
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?afterDate=%@",startDate];
+        entity = [NSString stringWithFormat:@"average walking heart rate"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
+    
 
     // Return array
     return array;
@@ -258,29 +262,24 @@
 }
 
 -(NSDate *)stitchDateTime:(NSString *) time {
-    // Get current datetime
-    NSDate *currentDateTime = [NSDate date];
-    
     // Instantiate a NSDateFormatter
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     
-    // Set the dateFormatter format
-    [dateFormatter setDateFormat:@"yyyy-MM-dd"];
-    
-    // Get the date in NSString for both start and stop time
-    NSString *date = [dateFormatter stringFromDate:currentDateTime];
-    
-    NSString *dateAdjusted = AS(AS(date,@" "),time);
-    
+    // Set format output
     [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
 
-    //NSDate *dateFromString = [[NSDate alloc] init];
-    NSDate *dateFromString = [dateFormatter dateFromString:dateAdjusted];
+    // Return date time in NSDate format
+    NSDate *date = [dateFormatter dateFromString:time];
     
     // Return
-    return dateFromString;
+    return date;
 }
 
+// Get Avergae Walk HR - TODO
+- (void) ProcessAverageWalkingHeartRate:( NSDictionary * ) jsonData
+{
+    printf("%s",[[jsonData description] UTF8String]);
+}
 
 // Specific methods for processisng activity data types
 // Heart Rate
@@ -289,7 +288,10 @@
     // Access root container
     NSArray * out = [jsonData objectForKey:@"activities-heart"];
     NSDictionary * block = out[0];
-
+    NSString * date = [block objectForKey:@"dateTime"];
+    
+    //printf("%s",[[jsonData description] UTF8String]);
+    
     // Define type
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
     HKQuantityType *restingtype  = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate];
@@ -303,16 +305,15 @@
     NSDictionary * out2 = [jsonData objectForKey:@"activities-heart-intraday"];
     NSArray *out3 = [out2 objectForKey:@"dataset"];
 
-    NSString * time2 = @"00:00:00";
+    NSString * time2 = AS(date,@" 00:00:00");
     NSDate * dateTime1 = [self stitchDateTime:time2];
 
-    NSString * time3 = @"23:59:59";
+    NSString * time3 = AS(date,@" 23:59:59");
     NSDate * dateTime3 = [self stitchDateTime:time3];
     
     // If 0 dont insert
     if(restingHR != 0){
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
-
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
     
         // Insert into healthkit and return response error or success
@@ -320,34 +321,39 @@
             if(success) {
                 //NSLog(@"success");
             }else {
-                NSLog(@"%@", error);
+                NSLog(@"error");
             }
         }];
     }
-
+    
+    NSMutableArray *bpmArray = [NSMutableArray array];
+    
     // Iterate over intraday dataset
     for(NSDictionary * entry in out3){
         NSString * time = [entry objectForKey:@"time"];
-        NSDate * dateTime = [self stitchDateTime:time];
+        NSDate * dateTime = [self stitchDateTime:AS(AS(date,@" "),time)];
         double value = [[entry objectForKey:@"value"] doubleValue];
 
         // Defined unit and quantity
         HKUnit *bpm = [HKUnit unitFromString:@"count/min"];
         HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:value];
         
-        //NSLog(@"%@ %f", dateTime, value);
-        //This inserts to quick to health - TODO
+        // Create sample
         HKQuantitySample * hrSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime];
-
-        // Insert into healthkit and return response error or success
-        [hkstore saveObject:hrSample withCompletion:^(BOOL success, NSError *error){
-            if(success) {
-                //NSLog(@"success");
-            }else {
-                NSLog(@"%@", error);
-            }
-        }];
+        
+        // Add sample to array
+        [bpmArray addObject:hrSample];
     }
+
+    // Add to healthkit
+    [hkstore saveObjects:bpmArray withCompletion:^(BOOL success, NSError *error){
+        if(success) {
+            NSLog(@"success");
+        }else {
+            NSLog(@"%@", error);
+        }
+        
+    }];
 }
 
 // Floors walked
@@ -530,16 +536,16 @@
 
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
-    
+
     dispatch_group_t group = dispatch_group_create();
-    
+
     NSMutableArray *URLS = [self generateURLS];
     for (NSMutableArray *entity in URLS){
-        
+
         // Retrieve url and activity type
         NSString *url = entity[0];
         __block NSString *type = entity[1];
-        
+
         // Enter group
         dispatch_group_enter(group);
 
@@ -548,14 +554,14 @@
 
         // Get URL
         [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
-            
+
             // Update interface with message, passed from entity
             self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
-            
+
             // Pass data to individual methods for processing
             NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
             NSString *methodArgs = AS(methodName,@":");
-            
+
             @try{
                 // Retrieve method for selected activity
                 //self->resultView.text = [responseObject description];
@@ -564,12 +570,12 @@
             }
             @catch (NSException *exception){
                 // Catch if failed
-                NSLog(@"Error - Failed to find method");
+                NSLog(@"Error - Failed to find method `%@`",methodName);
             }
 
             // Leave group
             dispatch_group_leave(group);
-            
+
         } failure:^(NSError *error) {
             NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
             NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
@@ -604,7 +610,7 @@
     [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
                                         readTypes:nil
                                         completion:^(BOOL success, NSError * _Nullable error) {
-                                            
+
         if(!success){
             //nothing
         }else{
@@ -622,7 +628,7 @@
                 HKObjectType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
                 HKAuthorizationStatus heartRateTypeStatus = [self->hkstore authorizationStatusForType:heartRateType];
                 errorCount += [self checktype:heartRateTypeStatus];
-                
+
                 HKObjectType *heartRateRestingType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate];
                 HKAuthorizationStatus heartRateRestingTypeStatus = [self->hkstore authorizationStatusForType:heartRateRestingType];
                 errorCount += [self checktype:heartRateRestingTypeStatus];
@@ -641,7 +647,7 @@
                 HKAuthorizationStatus sleepStatus = [self->hkstore authorizationStatusForType:sleep];
                 errorCount += [self checktype:sleepStatus];
             }
-            
+
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self->resultView.text = @"Please go to Apple Health app, and give access to all the types.";
@@ -652,7 +658,7 @@
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self->resultView.text = @"";
                     self->isRed = 0;
-                    
+
                     if(self->isDarkMode == 1){
                         self->resultView.textColor = [UIColor whiteColor];
                     }else{
