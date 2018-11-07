@@ -335,7 +335,8 @@
         HKUnit *bpm = [HKUnit unitFromString:@"count/min"];
         HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:value];
         
-        NSLog(@"%@ %f", dateTime, value);
+        //NSLog(@"%@ %f", dateTime, value);
+        //This inserts to quick to health - TODO
         HKQuantitySample * hrSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime];
 
         // Insert into healthkit and return response error or success
@@ -516,9 +517,9 @@
     
     // Access day container
     for(int i=0; i< ([out count]); i++){
-        NSDictionary *block = out[i];
-        NSString * distance = [block objectForKey:@"value"]; //distance in kilometers
-        NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
+        //NSDictionary *block = out[i];
+        //NSString * distance = [block objectForKey:@"value"]; //distance in kilometers
+        //NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
         
         //NSLog(@"%@", distance);
         //NSLog(@"%@", date);

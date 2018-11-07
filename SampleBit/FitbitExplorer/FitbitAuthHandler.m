@@ -48,14 +48,14 @@
             BOOL success;
             NSString *code = [self extractCode:note Key:@"?code"];
             if (code != nil) {
-                authenticationCode = code;
+                self->authenticationCode = code;
                 NSLog(@"You have successfully authorized");
                 success = true;
             }
             else {
                 success = false;
             }
-            [authorizationVC dismissViewControllerAnimated:YES completion:^{
+            [self->authorizationVC dismissViewControllerAnimated:YES completion:^{
                // [self.delegate authorizationDidFinish:success];
                 [self getAccessToken:success];
             }];
