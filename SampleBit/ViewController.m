@@ -194,7 +194,7 @@
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     
     if(heartRateSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1sec.json",endDate];
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",endDate];
         entity = [NSString stringWithFormat:@"heart rate"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -257,32 +257,96 @@
     return date;
 }
 
+-(NSDate *)stitchDateTime:(NSString *) time {
+    // Get current datetime
+    NSDate *currentDateTime = [NSDate date];
+    
+    // Instantiate a NSDateFormatter
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    
+    // Set the dateFormatter format
+    [dateFormatter setDateFormat:@"yyyy-MM-dd"];
+    
+    // Get the date in NSString for both start and stop time
+    NSString *date = [dateFormatter stringFromDate:currentDateTime];
+    
+    NSString *dateAdjusted = AS(AS(date,@" "),time);
+    
+    [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+
+    //NSDate *dateFromString = [[NSDate alloc] init];
+    NSDate *dateFromString = [dateFormatter dateFromString:dateAdjusted];
+    
+    // Return
+    return dateFromString;
+}
 
 
 // Specific methods for processisng activity data types
 // Heart Rate
 - (void) ProcessHeartRate:( NSDictionary * ) jsonData
 {
-    // Access root container - resting heart rate
+    // Access root container
     NSArray * out = [jsonData objectForKey:@"activities-heart"];
     NSDictionary * block = out[0];
+
+    // Define type
+    HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
+    HKQuantityType *restingtype  = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate];
+    
+    // Access resting Heart Rate and intraday heart rate at 1sec resolution
     NSDictionary * block2 = [block objectForKey:@"value"];
-    NSString * restingHR = [block2 objectForKey:@"restingHeartRate"];
-    
-    //NSLog(@"%@", restingHR); //today
-    
-    //Interday time series with 1sec resolution for heart rate
+    double restingHR = [[block2 objectForKey:@"restingHeartRate"] doubleValue];
+
+    // Retrieve variables from json data
+    HKUnit *bpmd = [HKUnit unitFromString:@"count/min"];
     NSDictionary * out2 = [jsonData objectForKey:@"activities-heart-intraday"];
     NSArray *out3 = [out2 objectForKey:@"dataset"];
+
+    NSString * time2 = @"00:00:00";
+    NSDate * dateTime1 = [self stitchDateTime:time2];
+
+    NSString * time3 = @"23:59:59";
+    NSDate * dateTime3 = [self stitchDateTime:time3];
     
-    for(NSDictionary * entry in out3){
-        NSString * time = [entry objectForKey:@"time"]; //Time
-        NSString * value = [entry objectForKey:@"value"]; //Heart Rate
-        //NSLog(@"%@", time);
-        //NSLog(@"%@", value);
+    // If 0 dont insert
+    if(restingHR != 0){
+        HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
+
+        HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
+    
+        // Insert into healthkit and return response error or success
+        [hkstore saveObject:hrRestingSample withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
     }
-    
-    //Add to Health Kit - TODO
+
+    // Iterate over intraday dataset
+    for(NSDictionary * entry in out3){
+        NSString * time = [entry objectForKey:@"time"];
+        NSDate * dateTime = [self stitchDateTime:time];
+        double value = [[entry objectForKey:@"value"] doubleValue];
+
+        // Defined unit and quantity
+        HKUnit *bpm = [HKUnit unitFromString:@"count/min"];
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:value];
+        
+        NSLog(@"%@ %f", dateTime, value);
+        HKQuantitySample * hrSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime];
+
+        // Insert into healthkit and return response error or success
+        [hkstore saveObject:hrSample withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
 }
 
 // Floors walked
@@ -291,17 +355,42 @@
     // Access root container
     NSArray * out = [jsonData objectForKey:@"activities-floors"];
     
+    // Define type
+    HKQuantityType *floorsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+
     // Access day container
     for(int i=0; i< ([out count]); i++){
         NSDictionary *block = out[i];
-        NSString * floors = [block objectForKey:@"value"]; //floor count
-        NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
         
-        //NSLog(@"%@", floors);
-        //NSLog(@"%@", date);
+        // Retrieve variables from json data
+        double floors = [[block objectForKey:@"value"] doubleValue];
+        NSDate * date = [self convertDate:[block objectForKey:@"dateTime"]];
+        HKUnit *floorUnit = [HKUnit unitFromString:@"count"];
+        
+        //Defined quantity
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:floorUnit doubleValue:floors];
+        
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        
+        NSString *identifer = AS([block objectForKey:@"dateTime"],@"Floors");
+        
+        NSDictionary * metadata =
+        @{HKMetadataKeySyncIdentifier: identifer,
+          HKMetadataKeySyncVersion: nowEpochSeconds};
+
+        // Create Sample with floors value
+        HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorsType quantity:quantity startDate:date endDate:date metadata:metadata];
+        
+        // Insert into healthkit and return response error or success
+        [hkstore saveObject:floorSample withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
     }
-    
-    //Add to Health Kit - TODO
 }
 
 // Steps
@@ -309,38 +398,114 @@
 {
     // Access root container
     NSArray * out = [jsonData objectForKey:@"activities-steps"];
+
+    // Define type
+    HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+
+    // Define unit
+    HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
     
     // Access day container
     for(int i=0; i< ([out count]); i++){
         NSDictionary *block = out[i];
-        NSString * steps = [block objectForKey:@"value"]; //step count
-        NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
-        
-        //NSLog(@"%@", steps);
-        //NSLog(@"%@", date);
-    }
 
-    //Add to Health Kit - TODO
+        // Retrieve variables from json data
+        double steps = [[block objectForKey:@"value"] doubleValue];
+        NSDate * date = [self convertDate:[block objectForKey:@"dateTime"]];
+
+        // Define quantity
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
+
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+
+        NSString *identifer = AS([block objectForKey:@"dateTime"],@"Steps");
+        
+        NSDictionary * metadata =
+        @{HKMetadataKeySyncIdentifier: identifer,
+          HKMetadataKeySyncVersion: nowEpochSeconds};
+
+        // Create Sample with floors value
+        HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date metadata:metadata];
+
+        // Insert into healthkit and return response error or success
+        [hkstore saveObject:stepSample withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
+}
+
+- (NSDate *)convertDate:(NSString *) Simpledate{
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd"];
+    [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
+    NSDate *date = [dateFormat dateFromString:Simpledate];
+    [dateFormat setDateFormat:@"yyyy/MM/dd"];
+    NSString *finalStr = [dateFormat stringFromDate:date];
+    NSDate *dateFromString = [dateFormat dateFromString:finalStr];
+    return dateFromString;
+}
+                           
+- (NSDate *)convertDateTime:(NSString *) dateTime{
     
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS"];
+    [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
+    NSDate *date = [dateFormat dateFromString:dateTime];
+    [dateFormat setDateFormat:@"yyyy/MM/dd HH:mm:ss"];
+    NSString *finalStr = [dateFormat stringFromDate:date];
+    NSDate *dateFromString = [dateFormat dateFromString:finalStr];
+    return dateFromString;
 }
 
 // Sleep
 - (void) ProcessSleep:( NSDictionary * ) jsonData
 {
+    NSDate *startDate;
+    NSDate *endDate;
+    
     // Access root container
     NSArray * out = [jsonData objectForKey:@"sleep"];
+
+    // Declare type
+    HKCategoryType *sleepType = [HKCategoryType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
     
     // Access day container
     for(int i=0; i< ([out count]); i++){
         NSDictionary *block = out[i];
-        NSString * duration = [block objectForKey:@"duration"]; //duration in milliseconds
-        NSString * date = [block objectForKey:@"dateOfSleep"]; //date - YYYY-MM-DD
+        NSString * start = [block objectForKey:@"startTime"];
+        NSTimeInterval secondsAsleep = [[block objectForKey:@"minutesAsleep"] intValue]*60;
+        NSTimeInterval minutesAwake = [[block objectForKey:@"minutesAwake"] intValue]*60;
+        
+        // Get compliant dates for function and calculate end time/date
+        startDate = [self convertDateTime:start];
+        endDate = [[startDate dateByAddingTimeInterval:secondsAsleep] dateByAddingTimeInterval:minutesAwake];
 
-        //NSLog(@"%@", duration);
-        //NSLog(@"%@", date);
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        
+        NSString *identifer = AS(start,@"Asleep");
+        
+        NSDictionary * metadata =
+        @{HKMetadataKeySyncIdentifier: identifer,
+          HKMetadataKeySyncVersion: nowEpochSeconds};
+        
+        // Get start and end of sleep
+        HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate metadata:metadata];
+
+        // Insert into healthkit and return response error or success
+        [hkstore saveObject:sleepSample withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
     }
-    
-    //Add to Health Kit - TODO
 }
 
 // Distance
@@ -389,18 +554,6 @@
             // Pass data to individual methods for processing
             NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
             NSString *methodArgs = AS(methodName,@":");
-
-            /*int d = sizeof(responseObject);
-            printf("%d",d);
-            
-            for(id element in [responseObject description])
-            {
-                NSLog(@"%@", element);
-                NSLog(@"=======================================");
-                NSLog(@"Is of type: %@", [element class]);
-                NSLog(@"Is of type NSString?: %@", ([[element class] isMemberOfClass:[NSString class]])? @"Yes" : @"No");
-                NSLog(@"Is a kind of NSString: %@", ([[element classForCoder] isSubclassOfClass:[NSString class]])? @"Yes" : @"No");
-            }*/
             
             @try{
                 // Retrieve method for selected activity
@@ -440,33 +593,54 @@
     NSArray *writeTypes = @[
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed],
+                            [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis]
                             ];
     
     hkstore = [[HKHealthStore alloc] init];
     [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
                                         readTypes:nil
                                         completion:^(BOOL success, NSError * _Nullable error) {
-
-                                            printf("asdf");
                                             
         if(!success){
-            printf("You didn't allow HealthKit to access these write data types.\nThe error was:\n \(error!.description).");
+            //nothing
         }else{
             NSInteger errorCount = 0;
 
-            // Steps Activity
-            HKQuantityType *stepsType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-            errorCount += [self checktype:stepsType];
+            if(self->stepsSwitch){
+                // Steps Activity
+                HKObjectType *stepsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+                HKAuthorizationStatus stepTypesStatus = [self->hkstore authorizationStatusForType:stepsType];
+                errorCount += [self checktype:stepTypesStatus];
+            }
 
-            // Heart Rate Activity
-            HKQuantityType *heartRateType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
-            errorCount += [self checktype:heartRateType];
+            if(self->heartRateSwitch){
+                // Heart Rate Activity
+                HKObjectType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
+                HKAuthorizationStatus heartRateTypeStatus = [self->hkstore authorizationStatusForType:heartRateType];
+                errorCount += [self checktype:heartRateTypeStatus];
+                
+                HKObjectType *heartRateRestingType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate];
+                HKAuthorizationStatus heartRateRestingTypeStatus = [self->hkstore authorizationStatusForType:heartRateRestingType];
+                errorCount += [self checktype:heartRateRestingTypeStatus];
+            }
+
+            if(self->floorsSwitch){
+                // Floor Climbed Activity
+                HKObjectType *floorClimbedType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+                HKAuthorizationStatus floorClimbedTypeStatus = [self->hkstore authorizationStatusForType:floorClimbedType];
+                errorCount += [self checktype:floorClimbedTypeStatus];
+            }
+
+            // Sleep
+            if(self->sleepSwitch){
+                HKObjectType *sleep = [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
+                HKAuthorizationStatus sleepStatus = [self->hkstore authorizationStatusForType:sleep];
+                errorCount += [self checktype:sleepStatus];
+            }
             
-            // Sleep Activity
-            HKQuantityType *floorClimbedType = [HKCategoryType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
-            errorCount += [self checktype:floorClimbedType];
-
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self->resultView.text = @"Please go to Apple Health app, and give access to all the types.";
@@ -490,10 +664,7 @@
     }];
 }
 
--(NSInteger)checktype:(HKQuantityType *)status{
-    
-    HKAuthorizationStatus activity = [hkstore authorizationStatusForType:status];
-    
+-(NSInteger)checktype:(HKAuthorizationStatus)activity{
     NSInteger isActive;
     switch (activity) {
         case HKAuthorizationStatusSharingAuthorized:

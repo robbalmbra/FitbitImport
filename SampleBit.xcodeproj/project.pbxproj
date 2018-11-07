@@ -11,7 +11,7 @@
 		00FB012E1EC468880004C6F9 /* FitbitAuthHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 00FB012B1EC468880004C6F9 /* FitbitAuthHandler.m */; };
 		467060DD660B7E4607416F2D /* libPods-SampleBit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DA7EE1F816B4BA55F14F98CB /* libPods-SampleBit.a */; };
 		A74C4B95218BC6AF00C15108 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A74C4B94218BC6AF00C15108 /* SettingsViewController.m */; };
-		A74C4B9A218F41A800C15108 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A74C4B99218F41A800C15108 /* HealthKit.framework */; };
+		A780FE402192EE3300C70B86 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A780FE3F2192EE3300C70B86 /* HealthKit.framework */; };
 		AE6142E31E2F2E5200D582DC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E21E2F2E5200D582DC /* main.m */; };
 		AE6142E61E2F2E5200D582DC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E51E2F2E5200D582DC /* AppDelegate.m */; };
 		AE6142E91E2F2E5200D582DC /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E81E2F2E5200D582DC /* ViewController.m */; };
@@ -30,8 +30,8 @@
 		78BF7901C936A9FD330B96C3 /* Pods-SampleBit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SampleBit.debug.xcconfig"; path = "Pods/Target Support Files/Pods-SampleBit/Pods-SampleBit.debug.xcconfig"; sourceTree = "<group>"; };
 		A74C4B94218BC6AF00C15108 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
 		A74C4B96218BC75400C15108 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
-		A74C4B99218F41A800C15108 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		A77A23892188DD47009AD794 /* SampleBit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SampleBit.entitlements; sourceTree = "<group>"; };
+		A780FE3F2192EE3300C70B86 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		AE6142DE1E2F2E5200D582DC /* Samplebit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Samplebit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE6142E21E2F2E5200D582DC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AE6142E41E2F2E5200D582DC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -51,7 +51,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				467060DD660B7E4607416F2D /* libPods-SampleBit.a in Frameworks */,
-				A74C4B9A218F41A800C15108 /* HealthKit.framework in Frameworks */,
+				A780FE402192EE3300C70B86 /* HealthKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,7 +129,7 @@
 		C55AAE4E30D4C8218A2E410A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A74C4B99218F41A800C15108 /* HealthKit.framework */,
+				A780FE3F2192EE3300C70B86 /* HealthKit.framework */,
 				DA7EE1F816B4BA55F14F98CB /* libPods-SampleBit.a */,
 			);
 			name = Frameworks;
@@ -169,7 +169,7 @@
 				TargetAttributes = {
 					AE6142DD1E2F2E5200D582DC = {
 						CreatedOnToolsVersion = 8.2;
-						DevelopmentTeam = G7Y54893PF;
+						DevelopmentTeam = 8FE9PXT7G6;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.ApplicationGroups.iOS = {
@@ -430,11 +430,11 @@
 				CODE_SIGN_ENTITLEMENTS = SampleBit/Samplebit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = G7Y54893PF;
+				DEVELOPMENT_TEAM = 8FE9PXT7G6;
 				INFOPLIST_FILE = SampleBit/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = FitbitImporterxcvxcv;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fitimporter;
 				PRODUCT_NAME = Samplebit;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
@@ -448,11 +448,11 @@
 				CODE_SIGN_ENTITLEMENTS = SampleBit/Samplebit.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = G7Y54893PF;
+				DEVELOPMENT_TEAM = 8FE9PXT7G6;
 				INFOPLIST_FILE = SampleBit/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = FitbitImporterxcvxcv;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fitimporter;
 				PRODUCT_NAME = Samplebit;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
