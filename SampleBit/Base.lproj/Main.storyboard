@@ -256,12 +256,41 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="EO2-fd-hU5">
+                                        <rect key="frame" x="0.0" y="342.33333333333337" width="414" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="EO2-fd-hU5" id="DBa-sH-7E1">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Water Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="xCM-XV-qZy">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="99" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VCQ-HJ-F6L">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="FloorSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="Zim-WC-65t"/>
+                                                        <action selector="WaterSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="u5L-uY-wo2"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="VCQ-HJ-F6L" firstAttribute="centerY" secondItem="DBa-sH-7E1" secondAttribute="centerY" id="DiL-XT-KAx"/>
+                                                <constraint firstItem="xCM-XV-qZy" firstAttribute="centerY" secondItem="DBa-sH-7E1" secondAttribute="centerY" id="GBl-JO-LeB"/>
+                                                <constraint firstAttribute="trailing" secondItem="VCQ-HJ-F6L" secondAttribute="trailing" constant="18" id="cfa-RQ-ihP"/>
+                                                <constraint firstItem="xCM-XV-qZy" firstAttribute="leading" secondItem="DBa-sH-7E1" secondAttribute="leading" constant="20" id="vXm-UT-pDV"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                             <tableViewSection headerTitle="Options" id="zjc-Pz-Dc1">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="NFZ-kB-hbf">
-                                        <rect key="frame" x="0.0" y="398.33333333333337" width="414" height="44"/>
+                                        <rect key="frame" x="0.0" y="442.33333333333337" width="414" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="NFZ-kB-hbf" id="ehU-6B-o9o">
                                             <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>

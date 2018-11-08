@@ -23,6 +23,7 @@
     __block BOOL stepsSwitch;
     __block BOOL distanceSwitch;
     __block BOOL floorsSwitch;
+    __block BOOL waterSwitch;
     __block BOOL darkModeSwitch;
     __block HKHealthStore *hkstore;
     __block BOOL isRed;
@@ -44,8 +45,21 @@
 
 -(void)viewWillAppear:(BOOL)animated
 {
+    // Water Switch
+    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"waterSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"waterSwitch"] == nil) {
+        // No set
+        waterSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        waterSwitch = 0;
+    }else{
+        // Turned on
+        waterSwitch = 1;
+    }
+
     // Heart Rate
-    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"heartSwitch"] == nil) {
         // No set
         heartRateSwitch = 1;
@@ -56,7 +70,7 @@
         // Turned on
         heartRateSwitch = 1;
     }
-    
+
     // Sleep Rate
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"sleepSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"sleepSwitch"] == nil) {
@@ -69,7 +83,7 @@
         // Turned on
         sleepSwitch = 1;
     }
-    
+
     // Step Rate
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"stepSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"stepSwitch"] == nil) {
@@ -195,14 +209,15 @@
             entity = [NSString stringWithFormat:@"heart rate"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
-        
-        // Average walk HR
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?afterDate=%@",startDate];
-        entity = [NSString stringWithFormat:@"average walking heart rate"];
+    }
+
+    //////////////////////////////////////////////// Water Consumed ///////////////////////////////////////////////
+    if(waterSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"water"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
     
-
     // Return array
     return array;
 }
@@ -275,10 +290,58 @@
     return date;
 }
 
-// Get Avergae Walk HR - TODO
-- (void) ProcessAverageWalkingHeartRate:( NSDictionary * ) jsonData
+// Get water drank
+- (void) ProcessWater:( NSDictionary * ) jsonData
 {
     printf("%s",[[jsonData description] UTF8String]);
+
+    // Create array for samples
+    NSMutableArray *waterArray = [NSMutableArray array];
+
+    // Create type
+    HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
+    HKUnit *waterday = [HKUnit unitFromString:@"ml"];
+    
+    // Iterate over data
+    NSArray * out = [jsonData objectForKey:@"foods-log-water"];
+    for(NSDictionary * entry in out){
+        NSString * date = [entry objectForKey:@"dateTime"];
+        double value = [[entry objectForKey:@"value"] doubleValue];
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:waterday doubleValue:value];
+        
+        printf("%f",value);
+        
+        NSString * time2 = AS(date,@" 00:00:00");
+        NSDate * dateTime1 = [self stitchDateTime:time2];
+        
+        NSString * time3 = AS(date,@" 23:59:59");
+        NSDate * dateTime2 = [self stitchDateTime:time3];
+
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        
+        NSString *identifer = AS(date,@"Water");
+        NSDictionary * metadata =
+        @{HKMetadataKeySyncIdentifier: identifer,
+          HKMetadataKeySyncVersion: nowEpochSeconds};
+        
+        // Create sample
+        HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 metadata:metadata];
+        
+        if(value != 0){
+            [waterArray addObject:waterSample];
+        }
+    }
+    
+    // Add to healthkit
+    [hkstore saveObjects:waterArray withCompletion:^(BOOL success, NSError *error){
+        if(success) {
+            //NSLog(@"success");
+        }else {
+            NSLog(@"%@", error);
+        }
+        
+    }];
 }
 
 // Specific methods for processisng activity data types
@@ -348,7 +411,7 @@
     // Add to healthkit
     [hkstore saveObjects:bpmArray withCompletion:^(BOOL success, NSError *error){
         if(success) {
-            NSLog(@"success");
+            //NSLog(@"success");
         }else {
             NSLog(@"%@", error);
         }
@@ -570,7 +633,7 @@
             }
             @catch (NSException *exception){
                 // Catch if failed
-                NSLog(@"Error - Failed to find method `%@`",methodName);
+                NSLog(@"Error - Failed to find method `%@`. %@",methodName, exception);
             }
 
             // Leave group
@@ -603,7 +666,7 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed],
-                            [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis]
+                            [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis],
                             ];
     
     hkstore = [[HKHealthStore alloc] init];
@@ -648,6 +711,13 @@
                 errorCount += [self checktype:sleepStatus];
             }
 
+            // Water
+            if(self->waterSwitch){
+                HKObjectType *water = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
+                HKAuthorizationStatus sleepStatus = [self->hkstore authorizationStatusForType:water];
+                errorCount += [self checktype:sleepStatus];
+            }
+            
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self->resultView.text = @"Please go to Apple Health app, and give access to all the types.";

@@ -39,6 +39,10 @@
     FitbitAuthHandler *fitbitAuthHandler;
 }
 
+- (IBAction)WaterSwitch:(UISwitch *)sender {
+    [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"waterSwitch"];
+}
+
 - (IBAction)HRSwitch:(UISwitch *)sender {
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"heartSwitch"];
 }
