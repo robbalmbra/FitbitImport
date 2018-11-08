@@ -63,6 +63,10 @@
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"floorSwitch"];
 }
 
+- (IBAction)EnergyBurnt:(UISwitch *)sender {
+    [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"activeEnergy"];
+}
+
 - (IBAction)ProfileSwitch:(UISwitch *)sender {
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"DarkModeSwitch"];
     

@@ -24,6 +24,7 @@
     __block BOOL distanceSwitch;
     __block BOOL floorsSwitch;
     __block BOOL waterSwitch;
+    __block BOOL activeEnergy;
     __block BOOL darkModeSwitch;
     __block HKHealthStore *hkstore;
     __block BOOL isRed;
@@ -58,6 +59,19 @@
         waterSwitch = 1;
     }
 
+    // Energy Switch
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"activeEnergy"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"activeEnergy"] == nil) {
+        // No set
+        activeEnergy = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        activeEnergy = 0;
+    }else{
+        // Turned on
+        activeEnergy = 1;
+    }
+    
     // Heart Rate
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"heartSwitch"] == nil) {
@@ -168,7 +182,7 @@
     NSMutableArray *array = [[NSMutableArray alloc] init];
 
     /////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////
-    NSString *startDate = [self calcDate:5];
+    NSString *startDate = [self calcDate:3];
     NSString *endDate = [self dateNow];
     NSString *entity;
     NSString *url;
@@ -203,7 +217,7 @@
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     //Ten day span
     if(heartRateSwitch){
-        for(int i=0; i<5; i++){
+        for(int i=0; i<3; i++){
             NSString *dateNow = [self calcDate:i];
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",dateNow];
             entity = [NSString stringWithFormat:@"heart rate"];
@@ -218,6 +232,15 @@
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
     
+    if(activeEnergy){
+        for(int i=0; i<3; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/calories/date/%@/1d/1min.json",dateNow];
+            entity = [NSString stringWithFormat:@"calories"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+    }
+
     // Return array
     return array;
 }
@@ -290,11 +313,60 @@
     return date;
 }
 
+// Get calories burnt
+- (void) ProcessCalories:( NSDictionary *) jsonData
+{
+    // Define sample array
+    NSMutableArray *energyArray = [NSMutableArray array];
+    
+    // Access root container
+    NSArray * out = [jsonData objectForKey:@"activities-calories"];
+    NSDictionary * block = out[0];
+    NSString * date = [block objectForKey:@"dateTime"];
+    
+    // Retrieve variables from json data
+    NSDictionary * out2 = [jsonData objectForKey:@"activities-calories-intraday"];
+    NSArray *out3 = [out2 objectForKey:@"dataset"];
+    
+    HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned];
+    HKUnit *energy = [HKUnit unitFromString:@"cal"];
+    
+    for(NSDictionary * entry in out3){
+        double value = [[entry objectForKey:@"value"] doubleValue];
+                        
+        // Create date/time
+        NSString * time = [entry objectForKey:@"time"];
+        NSDate * dateTime = [self stitchDateTime:AS(AS(date,@" "),time)];
+
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        
+        NSString *identifer = AS(AS(date,time),@"Calories");
+        NSDictionary * metadata =
+        @{HKMetadataKeySyncIdentifier: identifer,
+          HKMetadataKeySyncVersion: nowEpochSeconds};
+        
+        // Create sample
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:energy doubleValue:value];
+        HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime metadata:metadata];
+        
+        // Add sample to array
+        [energyArray addObject:calSample];
+    }
+    // Add to healthkit
+    [hkstore saveObjects:energyArray withCompletion:^(BOOL success, NSError *error){
+        if(success) {
+            //NSLog(@"success");
+        }else {
+            NSLog(@"%@", error);
+        }
+        
+    }];
+}
+
 // Get water drank
 - (void) ProcessWater:( NSDictionary * ) jsonData
 {
-    printf("%s",[[jsonData description] UTF8String]);
-
     // Create array for samples
     NSMutableArray *waterArray = [NSMutableArray array];
 
@@ -308,9 +380,7 @@
         NSString * date = [entry objectForKey:@"dateTime"];
         double value = [[entry objectForKey:@"value"] doubleValue];
         HKQuantity *quantity = [HKQuantity quantityWithUnit:waterday doubleValue:value];
-        
-        printf("%f",value);
-        
+
         NSString * time2 = AS(date,@" 00:00:00");
         NSDate * dateTime1 = [self stitchDateTime:time2];
         
@@ -597,6 +667,22 @@
     //Add to Health Kit - TODO
 }
 
+-(void)showAlert :(NSString *)message{
+    UIWindow* window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    window.rootViewController = [UIViewController new];
+    window.windowLevel = UIWindowLevelAlert + 1;
+    
+    UIAlertController* alertView = [UIAlertController alertControllerWithTitle:@"Fitbit Error!" message:message preferredStyle:UIAlertControllerStyleAlert];
+    
+    [alertView addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        
+        window.hidden = YES;
+    }]];
+    
+    [window makeKeyAndVisible];
+    [window.rootViewController presentViewController:alertView animated:YES completion:nil];
+}
+
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
 
@@ -640,6 +726,7 @@
             dispatch_group_leave(group);
 
         } failure:^(NSError *error) {
+            NSLog(@"%@", error);
             NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
             NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
             NSArray *errors = [errorResponse valueForKey:@"errors"];
@@ -667,6 +754,7 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed],
                             [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned]
                             ];
     
     hkstore = [[HKHealthStore alloc] init];
