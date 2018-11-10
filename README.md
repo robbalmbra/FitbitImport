@@ -1,5 +1,7 @@
 # FitbitImport
 
+## Features
+
 ## Updates
 
 ## Todo
