@@ -370,11 +370,29 @@
     return date;
 }
 
+// Return metadata to avoid duplication of data
+- (NSDictionary *) ReturnMetadata:(NSString *) type secondNumber:(NSString *) date
+{
+    NSDate *now = [NSDate date];
+    NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+    
+    NSString *identifer = AS(date,type);
+    NSDictionary * metadata =
+    @{HKMetadataKeySyncIdentifier: identifer,
+      HKMetadataKeySyncVersion: nowEpochSeconds};
+    
+    return metadata;
+}
+
 // Get nutrient details
 - (void) ProcessNutrients:( NSDictionary *) jsonData
 {
     // Get Date
     __block NSString * date;
+    NSDictionary *metadata;
+
+    // Define sample array
+    NSMutableArray *sampleArray = [NSMutableArray array];
 
     @try {
         NSArray * block = [jsonData objectForKey:@"foods"];
@@ -387,7 +405,7 @@
     // Start date and stop date
     NSString * DateStitch = AS(date,@" 12:00:00");
     NSDate * sampleDate = [self stitchDateTime:DateStitch];
-    
+
     // Get values
     NSDictionary * summary = [jsonData objectForKey:@"summary"];
     double carbs = [[summary objectForKey:@"carbs"] doubleValue];
@@ -395,7 +413,7 @@
     double fiber = [[summary objectForKey:@"fiber"] doubleValue];
     double protein = [[summary objectForKey:@"protein"] doubleValue];
     double sodium = [[summary objectForKey:@"sodium"] doubleValue];
-    
+
     // Retrieve types
     HKUnit *unit = [HKUnit unitFromString:@"g"];
     HKQuantityType *carbsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates] ;
@@ -411,19 +429,33 @@
     HKQuantity *proteinQuantity = [HKQuantity quantityWithUnit:unit doubleValue:protein];
     HKQuantity *sodiumQuantity = [HKQuantity quantityWithUnit:unit doubleValue:sodium];
 
-    NSDate *now = [NSDate date];
-    NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-    
-    NSString *identifer = AS(DateStitch,@"Carbs");
-    NSDictionary * metadata =
-    @{HKMetadataKeySyncIdentifier: identifer,
-      HKMetadataKeySyncVersion: nowEpochSeconds};
-    
     // Carbs
+    metadata = [self ReturnMetadata:@"Carbs" secondNumber:DateStitch];
     HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+    [sampleArray addObject:carbsSample];
+
+    // Fat
+    metadata = [self ReturnMetadata:@"Fat" secondNumber:DateStitch];
+    HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+    [sampleArray addObject:fatSample];
+
+    // Fiber
+    metadata = [self ReturnMetadata:@"Fiber" secondNumber:DateStitch];
+    HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+    [sampleArray addObject:fiberSample];
+
+    // Protein
+    metadata = [self ReturnMetadata:@"Protein" secondNumber:DateStitch];
+    HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+    [sampleArray addObject:proteinSample];
+
+    //Sodium
+    metadata = [self ReturnMetadata:@"Sodium" secondNumber:DateStitch];
+    HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+    [sampleArray addObject:sodiumSample];
 
     // Add to healthkit - carbs
-    [hkstore saveObject:carbsSample withCompletion:^(BOOL success, NSError *error){
+    [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
         if(success) {
             //NSLog(@"success");
         }else {
@@ -875,7 +907,11 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed],
                             [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySodium],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein]
                             ];
     
     hkstore = [[HKHealthStore alloc] init];
