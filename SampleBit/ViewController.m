@@ -20,12 +20,14 @@
     __weak IBOutlet UITextView *resultView;
     __block BOOL heartRateSwitch;
     __block BOOL sleepSwitch;
+    __block BOOL nutrients;
     __block BOOL stepsSwitch;
     __block BOOL distanceSwitch;
     __block BOOL floorsSwitch;
     __block BOOL waterSwitch;
     __block BOOL activeEnergy;
     __block BOOL darkModeSwitch;
+    __block BOOL nutrientsSwitch;
     __block HKHealthStore *hkstore;
     __block BOOL isRed;
     __block BOOL isDarkMode;
@@ -70,6 +72,19 @@
     }else{
         // Turned on
         activeEnergy = 1;
+    }
+    
+    // Nutrients Switch
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"nutrientsSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"nutrientsSwitch"] == nil) {
+        // No set
+        nutrients = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        nutrients = 0;
+    }else{
+        // Turned on
+        nutrients = 1;
     }
     
     // Heart Rate
@@ -186,6 +201,10 @@
     NSString *endDate = [self dateNow];
     NSString *entity;
     NSString *url;
+    
+    // How many days to process (today - Days);
+    NSInteger Days = 3;
+    int i = 0;
 
     if(sleepSwitch){
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
@@ -217,7 +236,7 @@
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     //Ten day span
     if(heartRateSwitch){
-        for(int i=0; i<3; i++){
+        for(i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",dateNow];
             entity = [NSString stringWithFormat:@"heart rate"];
@@ -232,15 +251,27 @@
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
     
+    ////////////////////////////////////////////////// Energy /////////////////////////////////////////////////////
     if(activeEnergy){
-        for(int i=0; i<3; i++){
+        for(i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/calories/date/%@/1d/1min.json",dateNow];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/calories/date/%@/1d/15min.json",dateNow];
             entity = [NSString stringWithFormat:@"calories"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
     }
 
+    ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
+    if(nutrients){
+        for(i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
+            NSLog(@"%@", url);
+            entity = [NSString stringWithFormat:@"nutrients"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+    }
+        
     // Return array
     return array;
 }
@@ -256,6 +287,21 @@
 -(void)didReceiveMemoryWarning{
     [super didReceiveMemoryWarning];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+// Get current date and time in full notation
+-(NSString *)getDate{
+    // Get current datetime
+    NSDate *currentDateTime = [NSDate date];
+    
+    // Instantiate a NSDateFormatter
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+
+    // Set the dateFormatter format
+    [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"];
+    
+    NSString *date = [dateFormatter stringFromDate:currentDateTime];
+    return date;
 }
 
 // Get current date and minus noOfDays from it
@@ -278,6 +324,17 @@
     NSString *date = [dateFormatter stringFromDate:myTime];
     
     // Return
+    return date;
+}
+
+-(NSDate*)str2date:(NSString*)dateStr{
+    if ([dateStr isKindOfClass:[NSDate class]]) {
+        return (NSDate*)dateStr;
+    }
+    
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd"];
+    NSDate *date = [dateFormat dateFromString:dateStr];
     return date;
 }
 
@@ -313,43 +370,106 @@
     return date;
 }
 
+// Get nutrient details
+- (void) ProcessNutrients:( NSDictionary *) jsonData
+{
+    // Get Date
+    __block NSString * date;
+
+    @try {
+        NSArray * block = [jsonData objectForKey:@"foods"];
+        date = [block[0] objectForKey:@"logDate"];
+    }
+    @catch (NSException *exception){
+        return;
+    }
+
+    // Start date and stop date
+    NSString * DateStitch = AS(date,@" 12:00:00");
+    NSDate * sampleDate = [self stitchDateTime:DateStitch];
+    
+    // Get values
+    NSDictionary * summary = [jsonData objectForKey:@"summary"];
+    double carbs = [[summary objectForKey:@"carbs"] doubleValue];
+    double fat = [[summary objectForKey:@"fat"] doubleValue];
+    double fiber = [[summary objectForKey:@"fiber"] doubleValue];
+    double protein = [[summary objectForKey:@"protein"] doubleValue];
+    double sodium = [[summary objectForKey:@"sodium"] doubleValue];
+    
+    // Retrieve types
+    HKUnit *unit = [HKUnit unitFromString:@"g"];
+    HKQuantityType *carbsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates] ;
+    HKQuantityType *fatType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal];
+    HKQuantityType *fiberType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber];
+    HKQuantityType *proteinType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein];
+    HKQuantityType *sodiumType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySodium];
+
+    // Create samples
+    HKQuantity *carbsQuantity = [HKQuantity quantityWithUnit:unit doubleValue:carbs];
+    HKQuantity *fatQuantity = [HKQuantity quantityWithUnit:unit doubleValue:fat];
+    HKQuantity *fiberQuantity = [HKQuantity quantityWithUnit:unit doubleValue:fiber];
+    HKQuantity *proteinQuantity = [HKQuantity quantityWithUnit:unit doubleValue:protein];
+    HKQuantity *sodiumQuantity = [HKQuantity quantityWithUnit:unit doubleValue:sodium];
+
+    NSDate *now = [NSDate date];
+    NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+    
+    NSString *identifer = AS(DateStitch,@"Carbs");
+    NSDictionary * metadata =
+    @{HKMetadataKeySyncIdentifier: identifer,
+      HKMetadataKeySyncVersion: nowEpochSeconds};
+    
+    // Carbs
+    HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+
+    // Add to healthkit - carbs
+    [hkstore saveObject:carbsSample withCompletion:^(BOOL success, NSError *error){
+        if(success) {
+            //NSLog(@"success");
+        }else {
+            NSLog(@"%@", error);
+        }
+    }];
+}
+
+
 // Get calories burnt
 - (void) ProcessCalories:( NSDictionary *) jsonData
 {
     // Define sample array
     NSMutableArray *energyArray = [NSMutableArray array];
-    
+
     // Access root container
     NSArray * out = [jsonData objectForKey:@"activities-calories"];
     NSDictionary * block = out[0];
     NSString * date = [block objectForKey:@"dateTime"];
-    
+
     // Retrieve variables from json data
     NSDictionary * out2 = [jsonData objectForKey:@"activities-calories-intraday"];
     NSArray *out3 = [out2 objectForKey:@"dataset"];
-    
+
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned];
     HKUnit *energy = [HKUnit unitFromString:@"cal"];
-    
+
     for(NSDictionary * entry in out3){
         double value = [[entry objectForKey:@"value"] doubleValue];
-                        
+
         // Create date/time
         NSString * time = [entry objectForKey:@"time"];
         NSDate * dateTime = [self stitchDateTime:AS(AS(date,@" "),time)];
 
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        
+
         NSString *identifer = AS(AS(date,time),@"Calories");
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
           HKMetadataKeySyncVersion: nowEpochSeconds};
-        
+
         // Create sample
         HKQuantity *quantity = [HKQuantity quantityWithUnit:energy doubleValue:value];
         HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime metadata:metadata];
-        
+
         // Add sample to array
         [energyArray addObject:calSample];
     }
@@ -360,7 +480,7 @@
         }else {
             NSLog(@"%@", error);
         }
-        
+
     }];
 }
 
@@ -754,7 +874,8 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed],
                             [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates]
                             ];
     
     hkstore = [[HKHealthStore alloc] init];

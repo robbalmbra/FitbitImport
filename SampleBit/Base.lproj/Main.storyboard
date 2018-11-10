@@ -272,8 +272,7 @@
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VCQ-HJ-F6L">
                                                     <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
                                                     <connections>
-                                                        <action selector="FloorSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="Zim-WC-65t"/>
-                                                        <action selector="WaterSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="u5L-uY-wo2"/>
+                                                        <action selector="WaterSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="qyn-kw-F7s"/>
                                                     </connections>
                                                 </switch>
                                             </subviews>
@@ -301,9 +300,7 @@
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ow1-e8-Fjh">
                                                     <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
                                                     <connections>
-                                                        <action selector="EnergyBurnt:" destination="YNg-mf-tmN" eventType="valueChanged" id="C8L-Jr-Okc"/>
-                                                        <action selector="FloorSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="9ZY-S6-gau"/>
-                                                        <action selector="WaterSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="vef-6V-RQ4"/>
+                                                        <action selector="EnergyBurnt:" destination="YNg-mf-tmN" eventType="valueChanged" id="AKZ-Yp-4vI"/>
                                                     </connections>
                                                 </switch>
                                             </subviews>
@@ -315,12 +312,40 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="2y1-fG-T3n">
+                                        <rect key="frame" x="0.0" y="430.33333333333337" width="414" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="2y1-fG-T3n" id="XH4-uc-LjP">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Nutrients Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ALg-Bb-0vL">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="124" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xTs-KE-XIH">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="NutrientsSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="m7N-Ut-yML"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="ALg-Bb-0vL" firstAttribute="centerY" secondItem="XH4-uc-LjP" secondAttribute="centerY" id="Ba8-Aj-3aO"/>
+                                                <constraint firstItem="ALg-Bb-0vL" firstAttribute="leading" secondItem="XH4-uc-LjP" secondAttribute="leading" constant="20" id="btP-ev-k3a"/>
+                                                <constraint firstItem="xTs-KE-XIH" firstAttribute="centerY" secondItem="XH4-uc-LjP" secondAttribute="centerY" id="jGY-mx-scH"/>
+                                                <constraint firstAttribute="trailing" secondItem="xTs-KE-XIH" secondAttribute="trailing" constant="18" id="wFZ-eh-1xp"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                             <tableViewSection headerTitle="Options" id="zjc-Pz-Dc1">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="NFZ-kB-hbf">
-                                        <rect key="frame" x="0.0" y="486.33333333333337" width="414" height="44"/>
+                                        <rect key="frame" x="0.0" y="530.33333333333337" width="414" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="NFZ-kB-hbf" id="ehU-6B-o9o">
                                             <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
@@ -364,12 +389,18 @@
                         <outlet property="DistanceProfileSwitch" destination="kUe-G4-NWS" id="ek1-fU-2s5"/>
                         <outlet property="DistanceSwitchText" destination="eER-jA-2Ct" id="hm6-9B-vDH"/>
                         <outlet property="DistanceSwitchUI" destination="6XQ-fw-FSC" id="2aY-Km-quR"/>
+                        <outlet property="EnergyProfileSwitch" destination="Ow1-e8-Fjh" id="4l1-3H-WBE"/>
+                        <outlet property="EnergySwitchText" destination="Xa9-4l-LZn" id="cWB-N5-Vtx"/>
+                        <outlet property="EnergySwitchUI" destination="fvB-tJ-lmJ" id="IgY-ws-bjw"/>
                         <outlet property="FloorProfileSwitch" destination="iWP-hE-cws" id="9pz-Vy-GP8"/>
                         <outlet property="FloorsSwitchText" destination="5ie-zh-6jQ" id="9mR-nx-ACw"/>
                         <outlet property="FloorsSwitchUI" destination="2SP-7A-du3" id="hxJ-4O-wvR"/>
                         <outlet property="HeartProfileSwitch" destination="isb-Y7-tWj" id="dZR-If-Yh0"/>
                         <outlet property="HeartRateSwitchText" destination="2Bm-Lp-euo" id="Ii9-js-G7J"/>
                         <outlet property="HeartRateSwitchUI" destination="Yah-Sg-sZI" id="gWm-tr-DW1"/>
+                        <outlet property="NutrientsProfileSwitch" destination="xTs-KE-XIH" id="r46-vg-ige"/>
+                        <outlet property="NutrientsSwitchText" destination="ALg-Bb-0vL" id="KjU-Yl-SMo"/>
+                        <outlet property="NutrientsSwitchUI" destination="XH4-uc-LjP" id="lFP-5a-Jje"/>
                         <outlet property="SettingsLabel" destination="zrG-ck-Vs5" id="QcJ-2G-Nf1"/>
                         <outlet property="SleepProfileSwitch" destination="2ab-Bq-Nkl" id="VlK-wi-i1i"/>
                         <outlet property="SleepSwitchText" destination="mE4-Ld-EK6" id="2kg-tz-PMC"/>
@@ -377,6 +408,9 @@
                         <outlet property="StepsProfileSwitch" destination="8VT-dL-J2C" id="PRK-2s-LEU"/>
                         <outlet property="StepsSwitchText" destination="E8a-SB-Ttr" id="GyA-Bh-2gC"/>
                         <outlet property="StepsSwitchUI" destination="cal-9r-agB" id="zgq-oc-rkN"/>
+                        <outlet property="WaterProfileSwitch" destination="VCQ-HJ-F6L" id="Bo3-4a-Wtk"/>
+                        <outlet property="WaterSwitchText" destination="xCM-XV-qZy" id="BQ5-Cg-JPi"/>
+                        <outlet property="WaterSwitchUI" destination="DBa-sH-7E1" id="Vyp-WH-h5n"/>
                         <outlet property="navigationBar" destination="ZLh-Ix-XeV" id="tI0-QH-s4I"/>
                         <outlet property="settingsView" destination="0Ax-an-0Su" id="DXS-wB-aTg"/>
                         <outlet property="syncsettings" destination="cmu-SQ-a3X" id="1Bb-bL-C5c"/>
