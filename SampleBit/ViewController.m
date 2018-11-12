@@ -158,7 +158,7 @@
         floorsSwitch = 1;
     }
     
-    // Floor Rate
+    // Weight
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"weightSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"weightSwitch"] == nil) {
         // No set
@@ -1144,7 +1144,7 @@
             
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    self->resultView.text = @"Please go to Apple Health app, and give access to all the types.";
+                    self->resultView.text = @"Please go to the Apple Health app, and give access to all the types.";
                     self->resultView.textColor = [UIColor redColor];
                     self->isRed = 1;
                 });
