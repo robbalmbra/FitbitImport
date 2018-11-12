@@ -22,6 +22,7 @@
     __weak IBOutlet UISwitch *WaterProfileSwitch;
     __weak IBOutlet UISwitch *EnergyProfileSwitch;
     __weak IBOutlet UISwitch *NutrientsProfileSwitch;
+    __weak IBOutlet UISwitch *WeightProfileSwitch;
     __weak IBOutlet UISwitch *DarkModeSwitch;
     __weak IBOutlet UITableView *settingsView;
     __weak IBOutlet UITableViewCell *syncsettings;
@@ -35,6 +36,8 @@
     __weak IBOutlet UILabel *DistanceSwitchText;
     __weak IBOutlet UIView *FloorsSwitchUI;
     __weak IBOutlet UILabel *FloorsSwitchText;
+    __weak IBOutlet UIView *WeightSwitchUI;
+    __weak IBOutlet UILabel *WeightSwitchText;
     __weak IBOutlet UIView *NutrientsSwitchUI;
     __weak IBOutlet UILabel *NutrientsSwitchText;
     __weak IBOutlet UILabel *EnergySwitchText;
@@ -50,6 +53,10 @@
 
 - (IBAction)WaterSwitch:(UISwitch *)sender {
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"waterSwitch"];
+}
+
+- (IBAction)WeightSwitch:(UISwitch *)sender {
+    [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"weightSwitch"];
 }
 
 - (IBAction)NutrientsSwitch:(UISwitch *)sender {
@@ -107,6 +114,8 @@
         EnergySwitchText.textColor = [UIColor whiteColor];
         WaterSwitchUI.backgroundColor = [UIColor blackColor];
         WaterSwitchText.textColor = [UIColor whiteColor];
+        WeightSwitchUI.backgroundColor = [UIColor blackColor];
+        WeightSwitchText.textColor = [UIColor whiteColor];
         
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
@@ -134,6 +143,8 @@
         EnergySwitchText.textColor = [UIColor blackColor];
         WaterSwitchUI.backgroundColor = [UIColor whiteColor];
         WaterSwitchText.textColor = [UIColor blackColor];
+        WeightSwitchUI.backgroundColor = [UIColor whiteColor];
+        WeightSwitchText.textColor = [UIColor blackColor];
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
@@ -221,6 +232,16 @@
         [NutrientsProfileSwitch setOn:YES];
     }
 
+    // Nutrients Switch
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"weightSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"weightSwitch"] == nil) {
+        [WeightProfileSwitch setOn:YES];
+    }else if (switchState == false) {
+        [WeightProfileSwitch setOn:NO];
+    }else{
+        [WeightProfileSwitch setOn:YES];
+    }
+
     // Dark Mode Switch
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
@@ -246,6 +267,8 @@
         EnergySwitchText.textColor = [UIColor blackColor];
         WaterSwitchUI.backgroundColor = [UIColor whiteColor];
         WaterSwitchText.textColor = [UIColor blackColor];
+        WeightSwitchUI.backgroundColor = [UIColor whiteColor];
+        WeightSwitchText.textColor = [UIColor blackColor];
         
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
@@ -276,6 +299,8 @@
         EnergySwitchText.textColor = [UIColor blackColor];
         WaterSwitchUI.backgroundColor = [UIColor whiteColor];
         WaterSwitchText.textColor = [UIColor blackColor];
+        WeightSwitchUI.backgroundColor = [UIColor whiteColor];
+        WeightSwitchText.textColor = [UIColor blackColor];
     
     }else{
         [DarkModeSwitch setOn:YES];
@@ -298,6 +323,9 @@
         NutrientsSwitchUI.backgroundColor = [UIColor blackColor];
         NutrientsSwitchText.textColor = [UIColor whiteColor];
 
+        WeightSwitchUI.backgroundColor = [UIColor blackColor];
+        WeightSwitchText.textColor = [UIColor whiteColor];
+        
         EnergySwitchUI.backgroundColor = [UIColor blackColor];
         EnergySwitchText.textColor = [UIColor whiteColor];
         WaterSwitchUI.backgroundColor = [UIColor blackColor];

@@ -340,12 +340,40 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="lVb-lg-x5F">
+                                        <rect key="frame" x="0.0" y="474.33333333333337" width="414" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="lVb-lg-x5F" id="bkg-g1-YPf">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Weight Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nAf-Yx-Glt">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="107" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VgQ-tF-YVD">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="WeightSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="1V5-eU-fLC"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="VgQ-tF-YVD" firstAttribute="centerY" secondItem="bkg-g1-YPf" secondAttribute="centerY" id="eYu-nc-VhH"/>
+                                                <constraint firstItem="nAf-Yx-Glt" firstAttribute="centerY" secondItem="bkg-g1-YPf" secondAttribute="centerY" id="ngt-ee-S47"/>
+                                                <constraint firstItem="nAf-Yx-Glt" firstAttribute="leading" secondItem="bkg-g1-YPf" secondAttribute="leading" constant="20" id="uho-Os-rvQ"/>
+                                                <constraint firstAttribute="trailing" secondItem="VgQ-tF-YVD" secondAttribute="trailing" constant="18" id="vQV-Md-Gd0"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                             <tableViewSection headerTitle="Options" id="zjc-Pz-Dc1">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="NFZ-kB-hbf">
-                                        <rect key="frame" x="0.0" y="530.33333333333337" width="414" height="44"/>
+                                        <rect key="frame" x="0.0" y="574.33333333333337" width="414" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="NFZ-kB-hbf" id="ehU-6B-o9o">
                                             <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
@@ -411,6 +439,9 @@
                         <outlet property="WaterProfileSwitch" destination="VCQ-HJ-F6L" id="Bo3-4a-Wtk"/>
                         <outlet property="WaterSwitchText" destination="xCM-XV-qZy" id="BQ5-Cg-JPi"/>
                         <outlet property="WaterSwitchUI" destination="DBa-sH-7E1" id="Vyp-WH-h5n"/>
+                        <outlet property="WeightProfileSwitch" destination="VgQ-tF-YVD" id="CNI-cO-Fyz"/>
+                        <outlet property="WeightSwitchText" destination="nAf-Yx-Glt" id="M3R-gQ-Djx"/>
+                        <outlet property="WeightSwitchUI" destination="bkg-g1-YPf" id="tga-sa-LBv"/>
                         <outlet property="navigationBar" destination="ZLh-Ix-XeV" id="tI0-QH-s4I"/>
                         <outlet property="settingsView" destination="0Ax-an-0Su" id="DXS-wB-aTg"/>
                         <outlet property="syncsettings" destination="cmu-SQ-a3X" id="1Bb-bL-C5c"/>

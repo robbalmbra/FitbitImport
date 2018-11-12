@@ -28,6 +28,7 @@
     __block BOOL activeEnergy;
     __block BOOL darkModeSwitch;
     __block BOOL nutrientsSwitch;
+    __block BOOL weightSwitch;
     __block HKHealthStore *hkstore;
     __block BOOL isRed;
     __block BOOL isDarkMode;
@@ -156,6 +157,19 @@
         // Turned on
         floorsSwitch = 1;
     }
+    
+    // Floor Rate
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"weightSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"weightSwitch"] == nil) {
+        // No set
+        weightSwitch = 1;
+    }else  if (switchState == false) {
+        // Turned off
+        weightSwitch = 0;
+    }else{
+        // Turned on
+        weightSwitch = 1;
+    }
 
     // Dark Mode Switch
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
@@ -275,7 +289,13 @@
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
     }
-        
+    
+    ///////////////////////////////////////////////////// Weight ///////////////////////////////////////////////////
+    if(weightSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/log/weight/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"weight"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
     // Return array
     return array;
 }
@@ -390,6 +410,52 @@
       HKMetadataKeySyncVersion: nowEpochSeconds};
     
     return metadata;
+}
+
+- (void) ProcessWeight:( NSDictionary *) jsonData
+{
+    NSString * DateStitch;
+    NSDate * sampleDate;
+    
+    // Define sample array
+    NSMutableArray *sampleArray = [NSMutableArray array];
+    
+    // Healthkit unit and type declarations
+    HKUnit *unit = [HKUnit unitFromString:@"kg"];
+    HKQuantityType *weightType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
+    HKQuantity *weightQuantity;
+    HKQuantitySample * weightSample;
+    NSDictionary * metadata;
+    
+    NSArray *days = [jsonData objectForKey:@"weight"];
+
+    // Loop over days
+    for(NSDictionary *day in days){
+        double weight = [[day objectForKey:@"weight"] doubleValue];
+        NSString * date = [day objectForKey:@"date"];
+        DateStitch = AS(date,@" 12:00:00");
+        sampleDate = [self stitchDateTime:DateStitch];
+
+        // Create quantity type
+        weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
+        
+        // Create sample and add to sample array
+        metadata = [self ReturnMetadata:@"Weight" secondNumber:DateStitch];
+        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:weightSample];
+    }
+    
+    if([sampleArray count] > 0)
+    {
+        // Add to healthkit - carbs
+        [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
 }
 
 // Get nutrient details
@@ -583,14 +649,17 @@
     }
     
     // Add to healthkit
-    [hkstore saveObjects:waterArray withCompletion:^(BOOL success, NSError *error){
-        if(success) {
-            //NSLog(@"success");
-        }else {
-            NSLog(@"%@", error);
-        }
+    if([waterArray count] > 0)
+    {
+        [hkstore saveObjects:waterArray withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
         
-    }];
+        }];
+    }
 }
 
 // Specific methods for processisng activity data types
@@ -978,7 +1047,8 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySodium],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass]
                             ];
     
         hkstore = [[HKHealthStore alloc] init];
@@ -1026,8 +1096,50 @@
             // Water
             if(self->waterSwitch){
                 HKObjectType *water = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
-                HKAuthorizationStatus sleepStatus = [self->hkstore authorizationStatusForType:water];
-                errorCount += [self checktype:sleepStatus];
+                HKAuthorizationStatus waterStatus = [self->hkstore authorizationStatusForType:water];
+                errorCount += [self checktype:waterStatus];
+            }
+
+            // Energy
+            if(self->activeEnergy){
+                HKObjectType *energy = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned];
+                HKAuthorizationStatus energyStatus = [self->hkstore authorizationStatusForType:energy];
+                errorCount += [self checktype:energyStatus];
+            }
+            
+            // Nutrients
+            if(self->nutrients){
+                // Carbs
+                HKObjectType *carbs = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates];
+                HKAuthorizationStatus carbsStatus = [self->hkstore authorizationStatusForType:carbs];
+                errorCount += [self checktype:carbsStatus];
+                
+                // Fat
+                HKObjectType *fat = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal];
+                HKAuthorizationStatus fatStatus = [self->hkstore authorizationStatusForType:fat];
+                errorCount += [self checktype:fatStatus];
+                
+                //Fiber
+                HKObjectType *fiber = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber];
+                HKAuthorizationStatus fiberStatus = [self->hkstore authorizationStatusForType:fiber];
+                errorCount += [self checktype:fiberStatus];
+                
+                // Sodium
+                HKObjectType *sodium = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySodium];
+                HKAuthorizationStatus sodiumStatus = [self->hkstore authorizationStatusForType:sodium];
+                errorCount += [self checktype:sodiumStatus];
+                
+                //Protein
+                HKObjectType *protein = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein];
+                HKAuthorizationStatus proteinStatus = [self->hkstore authorizationStatusForType:protein];
+                errorCount += [self checktype:proteinStatus];
+            }
+            
+            // Weight
+            if(self->weightSwitch){
+                HKObjectType *weight = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
+                HKAuthorizationStatus weightStatus = [self->hkstore authorizationStatusForType:weight];
+                errorCount += [self checktype:weightStatus];
             }
             
             if(errorCount != 0){
