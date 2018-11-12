@@ -31,6 +31,8 @@
     __block HKHealthStore *hkstore;
     __block BOOL isRed;
     __block BOOL isDarkMode;
+    __block BOOL apiNoRequests;
+    __block NSInteger nearestHour;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -44,6 +46,9 @@
     resultView.layer.borderWidth     = 0.0f;
     [[NSNotificationCenter defaultCenter]
      addObserver:self selector:@selector(notificationDidReceived) name:FitbitNotification object:nil];
+    
+    self->apiNoRequests = 0;
+    self->nearestHour = -1;
 }
 
 -(void)viewWillAppear:(BOOL)animated
@@ -266,7 +271,6 @@
         for(i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
-            NSLog(@"%@", url);
             entity = [NSString stringWithFormat:@"nutrients"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
@@ -278,11 +282,15 @@
 
 -(void)notificationDidReceived{
 
+    // Wait intill start of hour to switch apiNoRequests to 0 - TODO
+    
     // Initial message, starting to sync
-    resultView.text = @"Syncing data started...";
-
-    // Loop over all urls
-    [self getFitbitURL];
+    if(self->apiNoRequests == 0){
+        resultView.text = @"Syncing data started...";
+        
+        // Loop over all urls
+        [self getFitbitURL];
+    }
 }
 -(void)didReceiveMemoryWarning{
     [super didReceiveMemoryWarning];
@@ -430,38 +438,57 @@
     HKQuantity *sodiumQuantity = [HKQuantity quantityWithUnit:unit doubleValue:sodium];
 
     // Carbs
-    metadata = [self ReturnMetadata:@"Carbs" secondNumber:DateStitch];
-    HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
-    [sampleArray addObject:carbsSample];
+    if(carbs != 0)
+    {
+        metadata = [self ReturnMetadata:@"Carbs" secondNumber:DateStitch];
+        HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:carbsSample];
+    }
 
     // Fat
-    metadata = [self ReturnMetadata:@"Fat" secondNumber:DateStitch];
-    HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
-    [sampleArray addObject:fatSample];
+    if(fat != 0)
+    {
+        metadata = [self ReturnMetadata:@"Fat" secondNumber:DateStitch];
+        HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:fatSample];
+    }
 
     // Fiber
-    metadata = [self ReturnMetadata:@"Fiber" secondNumber:DateStitch];
-    HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
-    [sampleArray addObject:fiberSample];
+    if(fiber != 0)
+    {
+        metadata = [self ReturnMetadata:@"Fiber" secondNumber:DateStitch];
+        HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:fiberSample];
+    }
 
     // Protein
-    metadata = [self ReturnMetadata:@"Protein" secondNumber:DateStitch];
-    HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
-    [sampleArray addObject:proteinSample];
+    if(protein != 0)
+    {
+        metadata = [self ReturnMetadata:@"Protein" secondNumber:DateStitch];
+        HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:proteinSample];
+    }
 
     //Sodium
-    metadata = [self ReturnMetadata:@"Sodium" secondNumber:DateStitch];
-    HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
-    [sampleArray addObject:sodiumSample];
-
-    // Add to healthkit - carbs
-    [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
-        if(success) {
-            //NSLog(@"success");
-        }else {
-            NSLog(@"%@", error);
-        }
-    }];
+    if(sodium != 0)
+    {
+        metadata = [self ReturnMetadata:@"Sodium" secondNumber:DateStitch];
+        HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:sodiumSample];
+    }
+    
+    
+    if([sampleArray count] > 0)
+    {
+        // Add to healthkit - carbs
+        [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
 }
 
 
@@ -843,6 +870,10 @@
     NSMutableArray *URLS = [self generateURLS];
     for (NSMutableArray *entity in URLS){
 
+        if(self->apiNoRequests == 1){
+            break;
+        }
+
         // Retrieve url and activity type
         NSString *url = entity[0];
         __block NSString *type = entity[1];
@@ -863,41 +894,77 @@
             NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
             NSString *methodArgs = AS(methodName,@":");
 
-            @try{
-                // Retrieve method for selected activity
-                //self->resultView.text = [responseObject description];
-                SEL doubleParamSelector = NSSelectorFromString(methodArgs);
-                [self performSelector: doubleParamSelector withObject: responseObject];
+            //Only accept valid json response
+            if([responseObject count] != 0){
+                @try{
+                    // Retrieve method for selected activity
+                    SEL doubleParamSelector = NSSelectorFromString(methodArgs);
+                    [self performSelector: doubleParamSelector withObject: responseObject];
+                }
+                @catch (NSException *exception){
+                    // Catch if failed
+                    NSLog(@"Error - Failed to find method `%@`. %@",methodName, exception);
+                }
             }
-            @catch (NSException *exception){
-                // Catch if failed
-                NSLog(@"Error - Failed to find method `%@`. %@",methodName, exception);
-            }
-
             // Leave group
             dispatch_group_leave(group);
 
         } failure:^(NSError *error) {
-            NSLog(@"%@", error);
             NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
             NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
             NSArray *errors = [errorResponse valueForKey:@"errors"];
-            NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"] ;
+            NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"];
             if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
                 // To perform login if token is expired
                 [self->fitbitAuthHandler login:self];
+                return;
             }
+            
+            // Detect too many requests
+            NSString *message = [[errors objectAtIndex:0] valueForKey:@"message"];
+            if([message isEqual: @"Too Many Requests"]){
+                NSDate *now = [NSDate date];
+                NSInteger nowEpochSeconds = [now timeIntervalSince1970];
+                
+                NSInteger new_number = nowEpochSeconds - (nowEpochSeconds % 3600);
+                self->nearestHour = (new_number + 3600) + 15;
+
+                self->apiNoRequests = 1;
+                self->resultView.text = @"Too many requests, try again later...";
+            }else{
+                self->apiNoRequests = 0;
+                self->nearestHour = -1;
+            }
+
             dispatch_group_leave(group);
         }];
     }
 
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-        self->resultView.text = @"Sync Complete";
+        if(self->apiNoRequests == 0){
+            self->resultView.text = @"Sync Complete";
+        }
     });
 }
 
 - (IBAction)actionLogin:(UIButton *)sender {
 
+    NSDate *now = [NSDate date];
+    NSInteger nowEpochSeconds = [now timeIntervalSince1970];
+    
+    if(self->nearestHour != -1 && nowEpochSeconds > self->nearestHour)
+    {
+        self->apiNoRequests = 0;
+        self->nearestHour = -1;
+    }
+
+    if(self->apiNoRequests == 1){
+        self->resultView.text = @"Too many requests, try again later...";
+        return;
+    }
+    
+    NSLog(@"Running...");
+    
     // Write types attributes
     NSArray *writeTypes = @[
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount],
@@ -914,8 +981,8 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein]
                             ];
     
-    hkstore = [[HKHealthStore alloc] init];
-    [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
+        hkstore = [[HKHealthStore alloc] init];
+        [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
                                         readTypes:nil
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
