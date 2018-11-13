@@ -29,6 +29,7 @@
     __block BOOL darkModeSwitch;
     __block BOOL nutrientsSwitch;
     __block BOOL weightSwitch;
+    __block NSString *userid;
     __block HKHealthStore *hkstore;
     __block BOOL isRed;
     __block BOOL isDarkMode;
@@ -224,7 +225,7 @@
     // How many days to process (today - Days);
     NSInteger Days = 3;
     int i = 0;
-
+    
     if(sleepSwitch){
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
         entity = [NSString stringWithFormat:@"sleep"];
@@ -292,7 +293,7 @@
     
     ///////////////////////////////////////////////////// Weight ///////////////////////////////////////////////////
     if(weightSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/log/weight/date/%@/%@.json",startDate, endDate];
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/weight/date/%@/%@.json",startDate, endDate];
         entity = [NSString stringWithFormat:@"weight"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -301,15 +302,12 @@
 }
 
 -(void)notificationDidReceived{
-
-    // Wait intill start of hour to switch apiNoRequests to 0 - TODO
-    
     // Initial message, starting to sync
     if(self->apiNoRequests == 0){
         resultView.text = @"Syncing data started...";
-        
+
         // Loop over all urls
-        [self getFitbitURL];
+        [self getFitbitUserID];
     }
 }
 -(void)didReceiveMemoryWarning{
@@ -412,11 +410,16 @@
     return metadata;
 }
 
+- (void) ProcessDevice:( NSDictionary *) jsonData
+{
+    NSDictionary *info = [jsonData objectForKey:@"body-weight"];
+}
+
 - (void) ProcessWeight:( NSDictionary *) jsonData
 {
     NSString * DateStitch;
     NSDate * sampleDate;
-    
+    //
     // Define sample array
     NSMutableArray *sampleArray = [NSMutableArray array];
     
@@ -427,12 +430,12 @@
     HKQuantitySample * weightSample;
     NSDictionary * metadata;
     
-    NSArray *days = [jsonData objectForKey:@"weight"];
+    NSArray *days = [jsonData objectForKey:@"body-weight"];
 
     // Loop over days
     for(NSDictionary *day in days){
-        double weight = [[day objectForKey:@"weight"] doubleValue];
-        NSString * date = [day objectForKey:@"date"];
+        double weight = [[day objectForKey:@"value"] doubleValue];
+        NSString * date = [day objectForKey:@"dateTime"];
         DateStitch = AS(date,@" 12:00:00");
         sampleDate = [self stitchDateTime:DateStitch];
 
@@ -694,6 +697,11 @@
     
     // If 0 dont insert
     if(restingHR != 0){
+        // Update
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] second:@"RestingHR" third:[block objectForKey:@"dateTime"] forth:nowEpochSeconds];
+
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
     
@@ -761,6 +769,9 @@
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
         
+        // Update
+        [self UpdateSQL:[block objectForKey:@"value"] second:@"Floors" third:[block objectForKey:@"dateTime"] forth:nowEpochSeconds];
+        
         NSString *identifer = AS([block objectForKey:@"dateTime"],@"Floors");
         
         NSDictionary * metadata =
@@ -779,6 +790,13 @@
             }
         }];
     }
+}
+
+// SQL method to update
+- (void) UpdateSQL: (NSString *) value second:(NSString *) entity third:(NSString *)date forth:(NSNumber *) timestamp
+{
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@", entity, date, value, self->userid, [timestamp stringValue]]];
+    [NSData dataWithContentsOfURL:url];
 }
 
 // Steps
@@ -801,12 +819,15 @@
         double steps = [[block objectForKey:@"value"] doubleValue];
         NSDate * date = [self convertDate:[block objectForKey:@"dateTime"]];
 
-        // Define quantity
-        HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
-
+        // Get timestamp now
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        
+        // Update
+        [self UpdateSQL:[block objectForKey:@"value"] second:@"Steps" third:[block objectForKey:@"dateTime"] forth:nowEpochSeconds];
 
+        // Define quantity
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
         NSString *identifer = AS([block objectForKey:@"dateTime"],@"Steps");
         
         NSDictionary * metadata =
@@ -848,6 +869,11 @@
     NSString *finalStr = [dateFormat stringFromDate:date];
     NSDate *dateFromString = [dateFormat dateFromString:finalStr];
     return dateFromString;
+}
+
+- (void) InstallHistoricData
+{
+    // Initial phase after user has pressed sync button, use NSUSERDefaults to indicate that the user has completed initial stage
 }
 
 // Sleep
@@ -931,6 +957,45 @@
     [window.rootViewController presentViewController:alertView animated:YES completion:nil];
 }
 
+-(void)getFitbitUserID{
+
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_group_enter(group);
+    
+    // Get URL
+    NSString *token = [FitbitAuthHandler getToken];
+    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
+    
+    NSString * url = @"https://api.fitbit.com/1/user/-/profile.json";
+    [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
+       
+        // Get user id
+        NSDictionary * data = [responseObject objectForKey:@"user"];
+        NSString * userid = [data objectForKey:@"encodedId"];
+        self->userid = userid;
+        
+        // Leave
+        dispatch_group_leave(group);
+        
+    } failure:^(NSError *error) {
+        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
+        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
+        NSArray *errors = [errorResponse valueForKey:@"errors"];
+        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"];
+        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
+            // To perform login if token is expired
+            [self->fitbitAuthHandler login:self];
+            return;
+        }
+        // Leave
+        dispatch_group_leave(group);
+    }];
+    
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        [self getFitbitURL];
+    });
+}
+
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
 
@@ -959,6 +1024,9 @@
             // Update interface with message, passed from entity
             self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
 
+            // Print method to console
+            NSLog(@"Running `%@`",type);
+            
             // Pass data to individual methods for processing
             NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
             NSString *methodArgs = AS(methodName,@":");
