@@ -795,7 +795,7 @@
 // SQL method to update
 - (void) UpdateSQL: (NSString *) value second:(NSString *) entity third:(NSString *)date forth:(NSNumber *) timestamp
 {
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@", entity, date, value, self->userid, [timestamp stringValue]]];
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@", entity, date, value, self->userid, [timestamp stringValue]]];
     [NSData dataWithContentsOfURL:url];
 }
 
@@ -871,9 +871,61 @@
     return dateFromString;
 }
 
+// Method to get historic data
 - (void) InstallHistoricData
 {
-    // Initial phase after user has pressed sync button, use NSUSERDefaults to indicate that the user has completed initial stage
+    // Steps
+    NSError *error = nil;
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Steps", self->userid]];
+    NSString *content = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
+
+    NSData *jsonData = [content dataUsingEncoding:NSUTF8StringEncoding];
+    NSArray *results = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers|NSJSONReadingMutableLeaves error:&error];
+
+    // Define type
+    HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    
+    // Define unit
+    HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
+    
+    NSMutableArray *stepSamples = [NSMutableArray array];
+    
+    // Loop over entries
+    for(NSDictionary *entry in results){
+        double value = [[entry objectForKey:@"value"] doubleValue];
+        NSString *date = [entry objectForKey:@"datetime"];
+        NSDate *dateTime = [self convertDate:[entry objectForKey:@"datetime"]];
+
+        // Define quantity
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:value];
+        NSString *identifer = AS(date,@"Steps");
+
+        // Get timestamp now
+        NSDate *now = [NSDate date];
+        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        
+        NSDictionary * metadata =
+        @{HKMetadataKeySyncIdentifier: identifer,
+          HKMetadataKeySyncVersion: nowEpochSeconds};
+        
+        // Create Sample with floors value
+        HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:dateTime endDate:dateTime metadata:metadata];
+        [stepSamples addObject:stepSample];
+    }
+
+    // Update healthkit
+    [hkstore saveObjects:stepSamples withCompletion:^(BOOL success, NSError *error){
+        if(success) {
+            //NSLog(@"success");
+        }else {
+            NSLog(@"%@", error);
+        }
+    }];
+    
+    //Sleep - TODO
+    
+    // Completed
+    [[NSUserDefaults standardUserDefaults] setBool:1 forKey:@"DataInstalled"];
 }
 
 // Sleep
@@ -957,6 +1009,22 @@
     [window.rootViewController presentViewController:alertView animated:YES completion:nil];
 }
 
+-(BOOL)isInstalled{
+
+    // Check if historic data has been queried and installed
+    BOOL state = [[NSUserDefaults standardUserDefaults] boolForKey:@"DataInstalled"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"DataInstalled"] == nil) {
+        // Not installed
+        return 0;
+    }else  if (state == false) {
+        // Not installed
+        return 0;
+    }else{
+        // Installed
+        return 1;
+    }
+}
+
 -(void)getFitbitUserID{
 
     dispatch_group_t group = dispatch_group_create();
@@ -992,7 +1060,17 @@
     }];
     
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-        [self getFitbitURL];
+        if(![self->userid isEqual: @""]){
+            // Initial historic data install using userid only once
+            if([self isInstalled] == 0){
+                [self InstallHistoricData];
+            }
+
+            // Retrieve over
+            [self getFitbitURL];
+        }else{
+            self->resultView.text = @"Too many requests, try again later...";
+        }
     });
 }
 
