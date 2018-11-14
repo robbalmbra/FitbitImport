@@ -906,6 +906,8 @@
 // Method to get historic data
 - (void) InstallHistoricData
 {
+    // TODO - Wrap this method in dispatch_group to avoid function taking too long??!? -maybe, may be too long???
+    
     ////////////////////////////////////////////////// Steps /////////////////////////////////////////////////////
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Steps", self->userid]];
     NSArray * results = [self GetHistoricData:url];
@@ -936,17 +938,19 @@
             
             // Create Sample with step value
             HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date metadata:metadata];
+            
+            // Add to sample array
             [stepSamples addObject:stepSample];
+            
+            // Insert into healthkit and return response error or success
+            [hkstore saveObjects:stepSamples withCompletion:^(BOOL success, NSError *error){
+                if(success) {
+                    //NSLog(@"success");
+                }else {
+                    NSLog(@"%@", error);
+                }
+            }];
         }
-
-        // Update healthkit
-        [hkstore saveObjects:stepSamples withCompletion:^(BOOL success, NSError *error){
-            if(success) {
-                //NSLog(@"success");
-            }else {
-                NSLog(@"%@", error);
-            }
-        }];
     }
 
     ////////////////////////////////////////////////// Sleep /////////////////////////////////////////////////////
@@ -973,6 +977,7 @@
             // Create sample
             HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate metadata:metadata];
 
+            // Add to sample array
             [sleepSamples addObject:sleepSample];
         }
 
@@ -985,7 +990,52 @@
             }
         }];
     }
-    
+
+    ////////////////////////////////////////////////// Floors /////////////////////////////////////////////////////
+    url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Floors", self->userid]];
+    results = [self GetHistoricData:url];
+
+    // Only parse valid content
+    if([results count] > 0){
+
+        // Define type
+        HKQuantityType *floorType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+
+        // Define unit
+        HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
+
+        NSMutableArray *floorSamples = [NSMutableArray array];
+
+        // Loop over entries
+        for(NSDictionary *entry in results){
+            double value = [[entry objectForKey:@"value"] doubleValue];
+            NSString * time = [entry objectForKey:@"time"];
+            NSString * dates = AS(AS([entry objectForKey:@"datetime"],@" "),time);
+            NSDate * date = [self convertDate:dates];
+
+            // Define quantity
+            HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:value];
+
+            // Get metadate for stopping duplication
+            NSDictionary * metadata = [self ReturnMetadata:@"Floors" date:dates];
+
+            // Create Sample with step value
+            HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorType quantity:quantity startDate:date endDate:date metadata:metadata];
+
+            // Add to sample array
+            [floorSamples addObject:floorSample];
+
+            // Insert into healthkit and return response error or success
+            [hkstore saveObjects:floorSamples withCompletion:^(BOOL success, NSError *error){
+                if(success) {
+                    //NSLog(@"success");
+                }else {
+                    NSLog(@"%@", error);
+                }
+            }];
+        }
+    }
+
     // Completed
     [[NSUserDefaults standardUserDefaults] setBool:1 forKey:@"DataInstalled"];
 }
