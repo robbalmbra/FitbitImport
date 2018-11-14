@@ -429,7 +429,7 @@
     HKQuantity *weightQuantity;
     HKQuantitySample * weightSample;
     NSDictionary * metadata;
-    
+
     NSArray *days = [jsonData objectForKey:@"body-weight"];
 
     // Loop over days
@@ -441,13 +441,16 @@
 
         // Create quantity type
         weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
-        
+
+        // Update
+        [self UpdateSQL:[day objectForKey:@"value"] second:@"Weight" third:[day objectForKey:@"dateTime"] forth:@00000 fifth:@"12:00:00"];
+
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Weight" secondNumber:DateStitch];
         weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:weightSample];
     }
-    
+
     if([sampleArray count] > 0)
     {
         // Add to healthkit - carbs
@@ -493,7 +496,7 @@
 
     // Retrieve types
     HKUnit *unit = [HKUnit unitFromString:@"g"];
-    HKQuantityType *carbsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates] ;
+    HKQuantityType *carbsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates];
     HKQuantityType *fatType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal];
     HKQuantityType *fiberType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber];
     HKQuantityType *proteinType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein];
@@ -509,6 +512,7 @@
     // Carbs
     if(carbs != 0)
     {
+        [self UpdateSQL:[summary objectForKey:@"carbs"] second:@"Carbs" third:date forth:@00000 fifth:@"12:00:00"];
         metadata = [self ReturnMetadata:@"Carbs" secondNumber:DateStitch];
         HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:carbsSample];
@@ -517,6 +521,7 @@
     // Fat
     if(fat != 0)
     {
+        [self UpdateSQL:[summary objectForKey:@"fat"] second:@"Fat" third:date forth:@00000 fifth:@"12:00:00"];
         metadata = [self ReturnMetadata:@"Fat" secondNumber:DateStitch];
         HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:fatSample];
@@ -525,6 +530,7 @@
     // Fiber
     if(fiber != 0)
     {
+        [self UpdateSQL:[summary objectForKey:@"fiber"] second:@"Fiber" third:date forth:@00000 fifth:@"12:00:00"];
         metadata = [self ReturnMetadata:@"Fiber" secondNumber:DateStitch];
         HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:fiberSample];
@@ -533,6 +539,7 @@
     // Protein
     if(protein != 0)
     {
+        [self UpdateSQL:[summary objectForKey:@"protein"] second:@"Protein" third:date forth:@00000 fifth:@"12:00:00"];
         metadata = [self ReturnMetadata:@"Protein" secondNumber:DateStitch];
         HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:proteinSample];
@@ -541,12 +548,12 @@
     //Sodium
     if(sodium != 0)
     {
+        [self UpdateSQL:[summary objectForKey:@"sodium"] second:@"Sodium" third:date forth:@00000 fifth:@"12:00:00"];
         metadata = [self ReturnMetadata:@"Sodium" secondNumber:DateStitch];
         HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
-    
-    
+
     if([sampleArray count] > 0)
     {
         // Add to healthkit - carbs
@@ -621,7 +628,7 @@
     // Create type
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
     HKUnit *waterday = [HKUnit unitFromString:@"ml"];
-    
+
     // Iterate over data
     NSArray * out = [jsonData objectForKey:@"foods-log-water"];
     for(NSDictionary * entry in out){
@@ -631,26 +638,27 @@
 
         NSString * time2 = AS(date,@" 00:00:00");
         NSDate * dateTime1 = [self stitchDateTime:time2];
-        
+
         NSString * time3 = AS(date,@" 23:59:59");
         NSDate * dateTime2 = [self stitchDateTime:time3];
 
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        
+
         NSString *identifer = AS(date,@"Water");
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
           HKMetadataKeySyncVersion: nowEpochSeconds};
-        
+
         // Create sample
         HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 metadata:metadata];
-        
+
         if(value != 0){
+            [self UpdateSQL:[entry objectForKey:@"value"] second:@"Water" third:date forth:@000000 fifth:@"12:00:00"];
             [waterArray addObject:waterSample];
         }
     }
-    
+
     // Add to healthkit
     if([waterArray count] > 0)
     {
@@ -660,7 +668,6 @@
             }else {
                 NSLog(@"%@", error);
             }
-        
         }];
     }
 }
@@ -700,7 +707,7 @@
         // Update
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] second:@"RestingHR" third:[block objectForKey:@"dateTime"] forth:nowEpochSeconds];
+        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] second:@"RestingHR" third:[block objectForKey:@"dateTime"] forth:@0 fifth:@"12:00:00"];
 
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
@@ -760,7 +767,9 @@
         
         // Retrieve variables from json data
         double floors = [[block objectForKey:@"value"] doubleValue];
-        NSDate * date = [self convertDate:[block objectForKey:@"dateTime"]];
+        NSString * dates = AS([block objectForKey:@"dateTime"], @" 12:00:00");
+        NSDate * date = [self convertDate:dates];
+
         HKUnit *floorUnit = [HKUnit unitFromString:@"count"];
         
         //Defined quantity
@@ -770,10 +779,10 @@
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
         
         // Update
-        [self UpdateSQL:[block objectForKey:@"value"] second:@"Floors" third:[block objectForKey:@"dateTime"] forth:nowEpochSeconds];
+        [self UpdateSQL:[block objectForKey:@"value"] second:@"Floors" third:[block objectForKey:@"dateTime"] forth:@0 fifth:@"12:00:00"];
         
-        NSString *identifer = AS([block objectForKey:@"dateTime"],@"Floors");
-        
+        // Create meta indetifier to disable duplication of data
+        NSString *identifer = AS(dates,@"Floors");
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
           HKMetadataKeySyncVersion: nowEpochSeconds};
@@ -793,9 +802,10 @@
 }
 
 // SQL method to update
-- (void) UpdateSQL: (NSString *) value second:(NSString *) entity third:(NSString *)date forth:(NSNumber *) timestamp
+- (void) UpdateSQL: (NSString *) value second:(NSString *) entity third:(NSString *)date forth:(NSNumber *) timestamp fifth:(NSString *) time
 {
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@", entity, date, value, self->userid, [timestamp stringValue]]];
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@", entity, date, value, self->userid, [timestamp stringValue], time]];
+    
     [NSData dataWithContentsOfURL:url];
 }
 
@@ -817,18 +827,19 @@
 
         // Retrieve variables from json data
         double steps = [[block objectForKey:@"value"] doubleValue];
-        NSDate * date = [self convertDate:[block objectForKey:@"dateTime"]];
-
+        NSString * dates = AS([block objectForKey:@"dateTime"], @" 12:00:00");
+        NSDate * date = [self convertDate:dates];
+        
         // Get timestamp now
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        
+
         // Update
-        [self UpdateSQL:[block objectForKey:@"value"] second:@"Steps" third:[block objectForKey:@"dateTime"] forth:nowEpochSeconds];
+        [self UpdateSQL:[block objectForKey:@"value"] second:@"Steps" third:[block objectForKey:@"dateTime"] forth:@0 fifth:@"12:00:00"];
 
         // Define quantity
         HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
-        NSString *identifer = AS([block objectForKey:@"dateTime"],@"Steps");
+        NSString *identifer = AS(dates,@"Steps");
         
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
@@ -850,10 +861,10 @@
 
 - (NSDate *)convertDate:(NSString *) Simpledate{
     NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
-    [dateFormat setDateFormat:@"yyyy-MM-dd"];
+    [dateFormat setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
     [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
     NSDate *date = [dateFormat dateFromString:Simpledate];
-    [dateFormat setDateFormat:@"yyyy/MM/dd"];
+    [dateFormat setDateFormat:@"yyyy/MM/dd HH:mm:ss"];
     NSString *finalStr = [dateFormat stringFromDate:date];
     NSDate *dateFromString = [dateFormat dateFromString:finalStr];
     return dateFromString;
@@ -865,7 +876,7 @@
     [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS"];
     [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
     NSDate *date = [dateFormat dateFromString:dateTime];
-    [dateFormat setDateFormat:@"yyyy/MM/dd HH:mm:ss"];
+    [dateFormat setDateFormat:@"yyyy/MM/dd'T'HH:mm:ss"];
     NSString *finalStr = [dateFormat stringFromDate:date];
     NSDate *dateFromString = [dateFormat dateFromString:finalStr];
     return dateFromString;
@@ -878,50 +889,55 @@
     NSError *error = nil;
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Steps", self->userid]];
     NSString *content = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
-
+    
     NSData *jsonData = [content dataUsingEncoding:NSUTF8StringEncoding];
     NSArray *results = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers|NSJSONReadingMutableLeaves error:&error];
-
-    // Define type
-    HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
     
-    // Define unit
-    HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
-    
-    NSMutableArray *stepSamples = [NSMutableArray array];
-    
-    // Loop over entries
-    for(NSDictionary *entry in results){
-        double value = [[entry objectForKey:@"value"] doubleValue];
-        NSString *date = [entry objectForKey:@"datetime"];
-        NSDate *dateTime = [self convertDate:[entry objectForKey:@"datetime"]];
+    // Only parse valid content
+    if([results count] > 0){
 
-        // Define quantity
-        HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:value];
-        NSString *identifer = AS(date,@"Steps");
+        // Define type
+        HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
 
-        // Get timestamp now
-        NSDate *now = [NSDate date];
-        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+        // Define unit
+        HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
+
+        NSMutableArray *stepSamples = [NSMutableArray array];
         
-        NSDictionary * metadata =
-        @{HKMetadataKeySyncIdentifier: identifer,
-          HKMetadataKeySyncVersion: nowEpochSeconds};
-        
-        // Create Sample with floors value
-        HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:dateTime endDate:dateTime metadata:metadata];
-        [stepSamples addObject:stepSample];
+        // Loop over entries
+        for(NSDictionary *entry in results){
+            double value = [[entry objectForKey:@"value"] doubleValue];
+            NSString * time = [entry objectForKey:@"time"];
+            NSString * dates = AS(AS([entry objectForKey:@"datetime"],@" "),time);
+            NSDate * date = [self convertDate:dates];
+
+            // Define quantity
+            HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:value];
+            NSString *identifer = AS(dates,@"Steps");
+
+            // Get timestamp now
+            NSDate *now = [NSDate date];
+            NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+
+            NSDictionary * metadata =
+            @{HKMetadataKeySyncIdentifier: identifer,
+              HKMetadataKeySyncVersion: nowEpochSeconds};
+
+            // Create Sample with floors value
+            HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date metadata:metadata];
+            [stepSamples addObject:stepSample];
+        }
+
+        // Update healthkit
+        [hkstore saveObjects:stepSamples withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
     }
 
-    // Update healthkit
-    [hkstore saveObjects:stepSamples withCompletion:^(BOOL success, NSError *error){
-        if(success) {
-            //NSLog(@"success");
-        }else {
-            NSLog(@"%@", error);
-        }
-    }];
-    
     //Sleep - TODO
     
     // Completed
@@ -943,6 +959,7 @@
     // Access day container
     for(int i=0; i< ([out count]); i++){
         NSDictionary *block = out[i];
+
         NSString * start = [block objectForKey:@"startTime"];
         NSTimeInterval secondsAsleep = [[block objectForKey:@"minutesAsleep"] intValue]*60;
         NSTimeInterval minutesAwake = [[block objectForKey:@"minutesAwake"] intValue]*60;
