@@ -397,7 +397,7 @@
 }
 
 // Return metadata to avoid duplication of data
-- (NSDictionary *) ReturnMetadata:(NSString *) type secondNumber:(NSString *) date
+- (NSDictionary *) ReturnMetadata:(NSString *) type date:(NSString *) date
 {
     NSDate *now = [NSDate date];
     NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
@@ -408,11 +408,6 @@
       HKMetadataKeySyncVersion: nowEpochSeconds};
     
     return metadata;
-}
-
-- (void) ProcessDevice:( NSDictionary *) jsonData
-{
-    NSDictionary *info = [jsonData objectForKey:@"body-weight"];
 }
 
 - (void) ProcessWeight:( NSDictionary *) jsonData
@@ -443,10 +438,10 @@
         weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
 
         // Update
-        [self UpdateSQL:[day objectForKey:@"value"] second:@"Weight" third:[day objectForKey:@"dateTime"] forth:@00000 fifth:@"12:00:00"];
+        [self UpdateSQL:[day objectForKey:@"value"] type:@"Weight" date1:[day objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[day objectForKey:@"dateTime"]];
 
         // Create sample and add to sample array
-        metadata = [self ReturnMetadata:@"Weight" secondNumber:DateStitch];
+        metadata = [self ReturnMetadata:@"Weight" date:DateStitch];
         weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:weightSample];
     }
@@ -512,8 +507,8 @@
     // Carbs
     if(carbs != 0)
     {
-        [self UpdateSQL:[summary objectForKey:@"carbs"] second:@"Carbs" third:date forth:@00000 fifth:@"12:00:00"];
-        metadata = [self ReturnMetadata:@"Carbs" secondNumber:DateStitch];
+        [self UpdateSQL:[summary objectForKey:@"carbs"] type:@"Carbs" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
+        metadata = [self ReturnMetadata:@"Carbs" date:DateStitch];
         HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:carbsSample];
     }
@@ -521,8 +516,8 @@
     // Fat
     if(fat != 0)
     {
-        [self UpdateSQL:[summary objectForKey:@"fat"] second:@"Fat" third:date forth:@00000 fifth:@"12:00:00"];
-        metadata = [self ReturnMetadata:@"Fat" secondNumber:DateStitch];
+        [self UpdateSQL:[summary objectForKey:@"fat"] type:@"Fat" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
+        metadata = [self ReturnMetadata:@"Fat" date:DateStitch];
         HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:fatSample];
     }
@@ -530,8 +525,8 @@
     // Fiber
     if(fiber != 0)
     {
-        [self UpdateSQL:[summary objectForKey:@"fiber"] second:@"Fiber" third:date forth:@00000 fifth:@"12:00:00"];
-        metadata = [self ReturnMetadata:@"Fiber" secondNumber:DateStitch];
+        [self UpdateSQL:[summary objectForKey:@"fiber"] type:@"Fiber" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
+        metadata = [self ReturnMetadata:@"Fiber" date:DateStitch];
         HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:fiberSample];
     }
@@ -539,8 +534,8 @@
     // Protein
     if(protein != 0)
     {
-        [self UpdateSQL:[summary objectForKey:@"protein"] second:@"Protein" third:date forth:@00000 fifth:@"12:00:00"];
-        metadata = [self ReturnMetadata:@"Protein" secondNumber:DateStitch];
+        [self UpdateSQL:[summary objectForKey:@"protein"] type:@"Protein" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
+        metadata = [self ReturnMetadata:@"Protein" date:DateStitch];
         HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:proteinSample];
     }
@@ -548,8 +543,8 @@
     //Sodium
     if(sodium != 0)
     {
-        [self UpdateSQL:[summary objectForKey:@"sodium"] second:@"Sodium" third:date forth:@00000 fifth:@"12:00:00"];
-        metadata = [self ReturnMetadata:@"Sodium" secondNumber:DateStitch];
+        [self UpdateSQL:[summary objectForKey:@"sodium"] type:@"Sodium" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
+        metadata = [self ReturnMetadata:@"Sodium" date:DateStitch];
         HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
@@ -654,7 +649,7 @@
         HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 metadata:metadata];
 
         if(value != 0){
-            [self UpdateSQL:[entry objectForKey:@"value"] second:@"Water" third:date forth:@000000 fifth:@"12:00:00"];
+            [self UpdateSQL:[entry objectForKey:@"value"] type:@"Water" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
             [waterArray addObject:waterSample];
         }
     }
@@ -707,8 +702,8 @@
         // Update
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] second:@"RestingHR" third:[block objectForKey:@"dateTime"] forth:@0 fifth:@"12:00:00"];
-
+        
+        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] type:@"RestingHR" date1:[block objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[block objectForKey:@"dateTime"]];
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
     
@@ -779,7 +774,7 @@
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
         
         // Update
-        [self UpdateSQL:[block objectForKey:@"value"] second:@"Floors" third:[block objectForKey:@"dateTime"] forth:@0 fifth:@"12:00:00"];
+        [self UpdateSQL:[block objectForKey:@"value"] type:@"Floors" date1:[block objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[block objectForKey:@"dateTime"]];
         
         // Create meta indetifier to disable duplication of data
         NSString *identifer = AS(dates,@"Floors");
@@ -802,9 +797,15 @@
 }
 
 // SQL method to update
-- (void) UpdateSQL: (NSString *) value second:(NSString *) entity third:(NSString *)date forth:(NSNumber *) timestamp fifth:(NSString *) time
+- (void) UpdateSQL: (NSString *) value type:(NSString *) entity date1:(NSString *)date1 insertTimestamp:(NSNumber *) timestamp time1:(NSString *) time1 time2:(NSString *) time2 date2:(NSString *) date2
 {
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@", entity, date, value, self->userid, [timestamp stringValue], time]];
+    // If date2 and time2 isnt used copy date and time to date2 and time2
+    if(([date2  isEqual: @""] || date2 == nil) && ([time2  isEqual: @""] || time2 == nil)){
+        date2 = date1;
+        time2 = time1;
+    }
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@&date2=%@&time2=%@", entity, date1, value, self->userid, [timestamp stringValue], time1,date2,time2]];
     
     [NSData dataWithContentsOfURL:url];
 }
@@ -835,7 +836,7 @@
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
 
         // Update
-        [self UpdateSQL:[block objectForKey:@"value"] second:@"Steps" third:[block objectForKey:@"dateTime"] forth:@0 fifth:@"12:00:00"];
+        [self UpdateSQL:[block objectForKey:@"value"] type:@"Steps" date1:[block objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[block objectForKey:@"dateTime"]];
 
         // Define quantity
         HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
@@ -869,30 +870,46 @@
     NSDate *dateFromString = [dateFormat dateFromString:finalStr];
     return dateFromString;
 }
-                           
+
+// String -> Date
 - (NSDate *)convertDateTime:(NSString *) dateTime{
     
     NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
     [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS"];
     [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
     NSDate *date = [dateFormat dateFromString:dateTime];
-    [dateFormat setDateFormat:@"yyyy/MM/dd'T'HH:mm:ss"];
+    [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss"];
     NSString *finalStr = [dateFormat stringFromDate:date];
     NSDate *dateFromString = [dateFormat dateFromString:finalStr];
     return dateFromString;
 }
 
+// Date -> String
+- (NSString *)convertDateTimetoString:(NSDate *) dateTime{
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS"];
+    [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
+    NSString *date = [dateFormat stringFromDate:dateTime];
+    return date;
+}
+
+// Get json content from web server
+- (NSArray *) GetHistoricData:(NSURL *)url{
+    NSError *error = nil;
+    NSString *content = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
+
+    NSData *jsonData = [content dataUsingEncoding:NSUTF8StringEncoding];
+    NSArray *results = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers|NSJSONReadingMutableLeaves error:&error];
+    return results;
+}
+
 // Method to get historic data
 - (void) InstallHistoricData
 {
-    // Steps
-    NSError *error = nil;
+    ////////////////////////////////////////////////// Steps /////////////////////////////////////////////////////
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Steps", self->userid]];
-    NSString *content = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
-    
-    NSData *jsonData = [content dataUsingEncoding:NSUTF8StringEncoding];
-    NSArray *results = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers|NSJSONReadingMutableLeaves error:&error];
-    
+    NSArray * results = [self GetHistoricData:url];
+
     // Only parse valid content
     if([results count] > 0){
 
@@ -913,17 +930,11 @@
 
             // Define quantity
             HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:value];
-            NSString *identifer = AS(dates,@"Steps");
 
-            // Get timestamp now
-            NSDate *now = [NSDate date];
-            NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-
-            NSDictionary * metadata =
-            @{HKMetadataKeySyncIdentifier: identifer,
-              HKMetadataKeySyncVersion: nowEpochSeconds};
-
-            // Create Sample with floors value
+            // Get metadate for stopping duplication
+            NSDictionary * metadata = [self ReturnMetadata:@"Steps" date:dates];
+            
+            // Create Sample with step value
             HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date metadata:metadata];
             [stepSamples addObject:stepSample];
         }
@@ -938,7 +949,42 @@
         }];
     }
 
-    //Sleep - TODO
+    ////////////////////////////////////////////////// Sleep /////////////////////////////////////////////////////
+    url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Sleep", self->userid]];
+    results = [self GetHistoricData:url];
+
+    // Only parse valid content
+    if([results count] > 0){
+
+        // Define type
+        HKCategoryType *sleepType = [HKCategoryType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
+        
+        // Define sample array
+        NSMutableArray *sleepSamples = [NSMutableArray array];
+        
+        // Loop over entries
+        for(NSDictionary *entry in results){
+            NSDate * startDate = [self convertDateTime:[entry objectForKey:@"datetime"]];
+            NSDate * endDate = [self convertDateTime:[entry objectForKey:@"datetime2"]];
+            
+            // Create metadata
+            NSDictionary * metadata = [self ReturnMetadata:@"Asleep" date:[entry objectForKey:@"datetime"]];
+
+            // Create sample
+            HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate metadata:metadata];
+
+            [sleepSamples addObject:sleepSample];
+        }
+
+        // Insert into healthkit and return response error or success
+        [hkstore saveObjects:sleepSamples withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
     
     // Completed
     [[NSUserDefaults standardUserDefaults] setBool:1 forKey:@"DataInstalled"];
@@ -976,6 +1022,9 @@
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
           HKMetadataKeySyncVersion: nowEpochSeconds};
+
+        //Update
+        [self UpdateSQL:@"0" type:@"Sleep" date1:[self convertDateTimetoString:startDate] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertDateTimetoString:endDate]];
         
         // Get start and end of sleep
         HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate metadata:metadata];
@@ -1043,39 +1092,49 @@
 }
 
 -(void)getFitbitUserID{
-
+    
     dispatch_group_t group = dispatch_group_create();
     dispatch_group_enter(group);
     
-    // Get URL
-    NSString *token = [FitbitAuthHandler getToken];
-    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-    
-    NSString * url = @"https://api.fitbit.com/1/user/-/profile.json";
-    [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
-       
-        // Get user id
-        NSDictionary * data = [responseObject objectForKey:@"user"];
-        NSString * userid = [data objectForKey:@"encodedId"];
-        self->userid = userid;
-        
-        // Leave
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"userid"] != nil) {
+        // Copy userid from NSUserDefaults if exits
+        NSUserDefaults *data = [NSUserDefaults standardUserDefaults];
+        self->userid = [data objectForKey:@"userid"];
         dispatch_group_leave(group);
+    }else{
+        // Get userid from URL
+        NSString *token = [FitbitAuthHandler getToken];
+        FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
         
-    } failure:^(NSError *error) {
-        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
-        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
-        NSArray *errors = [errorResponse valueForKey:@"errors"];
-        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"];
-        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
-            // To perform login if token is expired
-            [self->fitbitAuthHandler login:self];
-            return;
-        }
-        // Leave
-        dispatch_group_leave(group);
-    }];
-    
+        NSString * url = @"https://api.fitbit.com/1/user/-/profile.json";
+        [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
+           
+            // Get user id
+            NSDictionary * data = [responseObject objectForKey:@"user"];
+            NSString * userid = [data objectForKey:@"encodedId"];
+            self->userid = userid;
+            
+            // Set id in NSUSERDEFAULTS for future use
+            [[NSUserDefaults standardUserDefaults] setValue:userid forKey:@"userid"];
+            
+            // Leave
+            dispatch_group_leave(group);
+            
+        } failure:^(NSError *error) {
+            NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
+            NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
+            NSArray *errors = [errorResponse valueForKey:@"errors"];
+            NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"];
+            if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
+                // To perform login if token is expired
+                [self->fitbitAuthHandler login:self];
+                return;
+            }
+            // Leave
+            dispatch_group_leave(group);
+        }];
+    }
+
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
         if(![self->userid isEqual: @""]){
             // Initial historic data install using userid only once
@@ -1194,8 +1253,6 @@
         self->resultView.text = @"Too many requests, try again later...";
         return;
     }
-    
-    NSLog(@"Running...");
     
     // Write types attributes
     NSArray *writeTypes = @[
