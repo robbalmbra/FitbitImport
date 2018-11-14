@@ -1024,16 +1024,61 @@
 
             // Add to sample array
             [floorSamples addObject:floorSample];
-
-            // Insert into healthkit and return response error or success
-            [hkstore saveObjects:floorSamples withCompletion:^(BOOL success, NSError *error){
-                if(success) {
-                    //NSLog(@"success");
-                }else {
-                    NSLog(@"%@", error);
-                }
-            }];
         }
+        
+        // Insert into healthkit and return response error or success
+        [hkstore saveObjects:floorSamples withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
+
+    ////////////////////////////////////////////////// Weight /////////////////////////////////////////////////////
+    url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Weight", self->userid]];
+    results = [self GetHistoricData:url];
+    
+    if([results count] > 0){
+
+        // Define type
+        HKQuantityType *weightType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
+        
+        // Define unit
+        HKUnit *weightUnit = [HKUnit unitFromString:@"kg"];
+        
+        // Define samples array
+        NSMutableArray *weightSamples = [NSMutableArray array];
+        
+        // Loop over entries
+        for(NSDictionary *entry in results){
+            double value = [[entry objectForKey:@"value"] doubleValue];
+            NSString * time = [entry objectForKey:@"time"];
+            NSString * dates = AS(AS([entry objectForKey:@"datetime"],@" "),time);
+            NSDate * date = [self convertDate:dates];
+            
+            // Define quantity
+            HKQuantity *quantity = [HKQuantity quantityWithUnit:weightUnit doubleValue:value];
+            
+            // Get metadate for stopping duplication
+            NSDictionary * metadata = [self ReturnMetadata:@"Weight" date:dates];
+            
+            // Create Sample with step value
+            HKQuantitySample * weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:quantity startDate:date endDate:date metadata:metadata];
+            
+            // Add to sample array
+            [weightSamples addObject:weightSample];
+        }
+        
+        // Insert into healthkit and return response error or success
+        [hkstore saveObjects:weightSamples withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
     }
 
     // Completed
