@@ -755,8 +755,7 @@
         // Update
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        
-        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] type:@"RestingHR" date1:[block objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[block objectForKey:@"dateTime"]];
+
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
     
@@ -781,7 +780,7 @@
         // Defined unit and quantity
         HKUnit *bpm = [HKUnit unitFromString:@"count/min"];
         HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:value];
-        
+
         // Create sample
         HKQuantitySample * hrSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime];
         
@@ -858,8 +857,11 @@
         time2 = time1;
     }
     
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@&date2=%@&time2=%@", entity, date1, value, self->userid, [timestamp stringValue], time1,date2,time2]];
-    [NSData dataWithContentsOfURL:url];
+    NSString *url = [NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@&date2=%@&time2=%@", entity, date1, value, self->userid, [timestamp stringValue], time1,date2,time2];
+
+    NSString * encodeURL = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    NSURL* url2 = [NSURL URLWithString:encodeURL];
+    [NSData dataWithContentsOfURL:url2];
 }
 
 // Steps
