@@ -296,6 +296,10 @@
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/weight/date/%@/%@.json",startDate, endDate];
         entity = [NSString stringWithFormat:@"weight"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/bmi/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"bmi"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
     // Return array
     return array;
@@ -410,6 +414,55 @@
     return metadata;
 }
 
+- (void) ProcessBmi:( NSDictionary *) jsonData
+{
+    NSString * DateStitch;
+    NSDate * sampleDate;
+
+    // Define sample array
+    NSMutableArray *sampleArray = [NSMutableArray array];
+
+    // Healthkit unit and type declarations
+    HKUnit *unit = [HKUnit unitFromString:@"count"];
+    HKQuantityType *weightType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex];
+    HKQuantity *weightQuantity;
+    HKQuantitySample * weightSample;
+    NSDictionary * metadata;
+
+    NSArray *days = [jsonData objectForKey:@"body-bmi"];
+
+    // Loop over days
+    for(NSDictionary *day in days){
+        double weight = [[day objectForKey:@"value"] doubleValue];
+        NSString * date = [day objectForKey:@"dateTime"];
+        DateStitch = AS(date,@" 12:00:00");
+        sampleDate = [self stitchDateTime:DateStitch];
+
+        // Create quantity type
+        weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
+
+        // Update
+        [self UpdateSQL:[day objectForKey:@"value"] type:@"Bmi" date1:[day objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[day objectForKey:@"dateTime"]];
+
+        // Create sample and add to sample array
+        metadata = [self ReturnMetadata:@"Bmi" date:DateStitch];
+        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        [sampleArray addObject:weightSample];
+    }
+    
+    if([sampleArray count] > 0)
+    {
+        // Add to healthkit
+        [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
+}
+
 - (void) ProcessWeight:( NSDictionary *) jsonData
 {
     NSString * DateStitch;
@@ -448,7 +501,7 @@
 
     if([sampleArray count] > 0)
     {
-        // Add to healthkit - carbs
+        // Add to healthkit
         [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
             if(success) {
                 //NSLog(@"success");
@@ -806,7 +859,6 @@
     }
     
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@&date2=%@&time2=%@", entity, date1, value, self->userid, [timestamp stringValue], time1,date2,time2]];
-    
     [NSData dataWithContentsOfURL:url];
 }
 
@@ -1081,6 +1133,51 @@
         }];
     }
 
+    ////////////////////////////////////////////////// BMI /////////////////////////////////////////////////////
+    url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Bmi", self->userid]];
+    results = [self GetHistoricData:url];
+
+    if([results count] > 0){
+
+        // Define type
+        HKQuantityType *bmiType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex];
+
+        // Define unit
+        HKUnit *weightUnit = [HKUnit unitFromString:@"count"];
+
+        // Define samples array
+        NSMutableArray *bmiSamples = [NSMutableArray array];
+
+        // Loop over entries
+        for(NSDictionary *entry in results){
+            double value = [[entry objectForKey:@"value"] doubleValue];
+            NSString * time = [entry objectForKey:@"time"];
+            NSString * dates = AS(AS([entry objectForKey:@"datetime"],@" "),time);
+            NSDate * date = [self convertDate:dates];
+
+            // Define quantity
+            HKQuantity *quantity = [HKQuantity quantityWithUnit:weightUnit doubleValue:value];
+
+            // Get metadate for stopping duplication
+            NSDictionary * metadata = [self ReturnMetadata:@"Bmi" date:dates];
+
+            // Create Sample with step value
+            HKQuantitySample * bmiSample = [HKQuantitySample quantitySampleWithType:bmiType quantity:quantity startDate:date endDate:date metadata:metadata];
+
+            // Add to sample array
+            [bmiSamples addObject:bmiSample];
+        }
+
+        // Insert into healthkit and return response error or success
+        [hkstore saveObjects:bmiSamples withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                //NSLog(@"success");
+            }else {
+                NSLog(@"%@", error);
+            }
+        }];
+    }
+
     // Completed
     [[NSUserDefaults standardUserDefaults] setBool:1 forKey:@"DataInstalled"];
 }
@@ -1333,11 +1430,34 @@
     });
 }
 
+-(BOOL)checkNetConnection
+{
+    Reachability * reachability = [Reachability reachabilityForInternetConnection];
+    [reachability startNotifier];
+    NetworkStatus internetStatus = [reachability currentReachabilityStatus] ;
+    
+    if(internetStatus == NotReachable)
+    {
+        return NO;
+    }
+    else {
+        // NSLog(@"Network is reachable");
+        return YES;
+    }
+}
+
 - (IBAction)actionLogin:(UIButton *)sender {
+
+    // Check if internet available
+    BOOL isNetworkAvailable = [self checkNetConnection];
+    if (!isNetworkAvailable) {
+        [self showAlert:@"Please check your internet connection"];
+        return;
+    }
 
     NSDate *now = [NSDate date];
     NSInteger nowEpochSeconds = [now timeIntervalSince1970];
-    
+
     if(self->nearestHour != -1 && nowEpochSeconds > self->nearestHour)
     {
         self->apiNoRequests = 0;
@@ -1348,7 +1468,7 @@
         self->resultView.text = @"Too many requests, try again later...";
         return;
     }
-    
+
     // Write types attributes
     NSArray *writeTypes = @[
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount],
@@ -1363,7 +1483,8 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex]
                             ];
     
         hkstore = [[HKHealthStore alloc] init];
@@ -1421,42 +1542,46 @@
                 HKAuthorizationStatus energyStatus = [self->hkstore authorizationStatusForType:energy];
                 errorCount += [self checktype:energyStatus];
             }
-            
+
             // Nutrients
             if(self->nutrients){
                 // Carbs
                 HKObjectType *carbs = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates];
                 HKAuthorizationStatus carbsStatus = [self->hkstore authorizationStatusForType:carbs];
                 errorCount += [self checktype:carbsStatus];
-                
+
                 // Fat
                 HKObjectType *fat = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal];
                 HKAuthorizationStatus fatStatus = [self->hkstore authorizationStatusForType:fat];
                 errorCount += [self checktype:fatStatus];
-                
+
                 //Fiber
                 HKObjectType *fiber = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber];
                 HKAuthorizationStatus fiberStatus = [self->hkstore authorizationStatusForType:fiber];
                 errorCount += [self checktype:fiberStatus];
-                
+
                 // Sodium
                 HKObjectType *sodium = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySodium];
                 HKAuthorizationStatus sodiumStatus = [self->hkstore authorizationStatusForType:sodium];
                 errorCount += [self checktype:sodiumStatus];
-                
+
                 //Protein
                 HKObjectType *protein = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein];
                 HKAuthorizationStatus proteinStatus = [self->hkstore authorizationStatusForType:protein];
                 errorCount += [self checktype:proteinStatus];
             }
-            
+
             // Weight
             if(self->weightSwitch){
                 HKObjectType *weight = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
                 HKAuthorizationStatus weightStatus = [self->hkstore authorizationStatusForType:weight];
                 errorCount += [self checktype:weightStatus];
+
+                HKObjectType *bmi = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex];
+                HKAuthorizationStatus bmiStatus = [self->hkstore authorizationStatusForType:bmi];
+                errorCount += [self checktype:bmiStatus];
             }
-            
+
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
                     self->resultView.text = @"Please go to the Apple Health app, and give access to all the types.";
