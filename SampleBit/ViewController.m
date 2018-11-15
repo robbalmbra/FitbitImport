@@ -248,7 +248,8 @@
 
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
     if(distanceSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/distance/date/%@/%@.json",startDate, endDate];
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?afterDate=%@T00:00:00&sort=asc&limit=20&offset=0",startDate];
+        NSLog(@"%@", url);
         entity = [NSString stringWithFormat:@"distance"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -925,6 +926,19 @@
     return dateFromString;
 }
 
+// String -> Date with Z
+- (NSDate *)convertDateTimeZ:(NSString *) dateTime{
+    
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
+    [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
+    NSDate *date = [dateFormat dateFromString:dateTime];
+    [dateFormat setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss"];
+    NSString *finalStr = [dateFormat stringFromDate:date];
+    NSDate *dateFromString = [dateFormat dateFromString:finalStr];
+    return dateFromString;
+}
+
 // String -> Date
 - (NSDate *)convertDateTime:(NSString *) dateTime{
     
@@ -1184,6 +1198,11 @@
     [[NSUserDefaults standardUserDefaults] setBool:1 forKey:@"DataInstalled"];
 }
 
+- (void) Processtest:( NSDictionary *) jsonData
+{
+    //HKCategoryType *sleepType = [HKObjectType quantityTypeForIdentifier:HKQ];
+}
+
 // Sleep
 - (void) ProcessSleep:( NSDictionary * ) jsonData
 {
@@ -1234,23 +1253,110 @@
     }
 }
 
+// Get workout
+- (HKWorkout *) GetWorkout:(NSString *)activityName startDate:(NSDate *)StartDate endDate:(NSDate *)EndDate rawData:(NSString *) RawDateTime calories:(HKQuantity *) calories distance:(double) distance
+{
+    __block NSUInteger workoutType;
+    __block HKWorkout *workout;
+
+    // Select activity type
+    if([activityName  isEqual: @"Walk"]){
+        workoutType = HKWorkoutActivityTypeWalking;
+    }else if([activityName  isEqual: @"Outdoor Bike"]){
+        workoutType = HKWorkoutActivityTypeCycling;
+    }else if([activityName isEqual: @"Running"]){
+        workoutType = HKWorkoutActivityTypeRunning;
+    }
+
+    if(distance == 0){
+        // Create metadata and workout
+        NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime];
+        workout = [HKWorkout workoutWithActivityType:workoutType
+                                                      startDate:StartDate
+                                                        endDate:EndDate
+                                                       duration:0
+                                              totalEnergyBurned:calories
+                                                  totalDistance:0
+                                                       metadata:metadata];
+    }else{
+        
+        //Kilometers to miles calculation
+        double conv = 0.621371;
+        double miles = (distance * conv);
+        
+        // Declare distance type
+        HKQuantity *distance2 = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:miles];
+
+        // Create metadata and workout
+        NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime];
+        workout = [HKWorkout workoutWithActivityType:workoutType
+                                                      startDate:StartDate
+                                                        endDate:EndDate
+                                                       duration:0
+                                              totalEnergyBurned:calories
+                                                  totalDistance:distance2
+                                                       metadata:metadata];
+    }
+    
+    // Return workout
+    return workout;
+}
+
 // Distance
 - (void) ProcessDistance:( NSDictionary * ) jsonData
 {
-    // Access root container
-    NSArray * out = [jsonData objectForKey:@"activities-distance"];
-    
-    // Access day container
-    for(int i=0; i< ([out count]); i++){
-        //NSDictionary *block = out[i];
-        //NSString * distance = [block objectForKey:@"value"]; //distance in kilometers
-        //NSString * date = [block objectForKey:@"dateTime"]; //date - YYYY-MM-DD
+    NSArray * activities = [jsonData objectForKey:@"activities"];
+    __block NSUInteger workoutType;
+    HKWorkout *workout;
+
+    for(NSDictionary * entry in activities){
+
+        NSLog(@"%@", entry);
         
-        //NSLog(@"%@", distance);
-        //NSLog(@"%@", date);
+        NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
+        NSString * activityName = [entry objectForKey:@"activityName"];
+
+        double distance = [[entry objectForKey:@"distance"] doubleValue];
+        double calories = [[entry objectForKey:@"calories"] doubleValue];
+        double averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
+
+        // Calculate end date/time
+        int duration = [[entry objectForKey:@"duration"] intValue];
+        NSDate * endTime = [startTime dateByAddingTimeInterval:duration/1000.0];
+
+        // Create and declare calories type
+        HKQuantity *energyBurned = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
+
+        // Create workout and return workout
+        workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance];
+
+        // Insert into healthkit and return response error or success
+        [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
+            if(success) {
+                // Sample Array
+                NSMutableArray *samples = [NSMutableArray array];
+                
+                // Heart rate average insert into samples
+                HKQuantityType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
+                HKQuantity *heartRateForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count/min"] doubleValue:averageHeartRate];
+                
+                // Create sample
+                HKQuantitySample *heartRateForIntervalSample =
+                [HKQuantitySample quantitySampleWithType:heartRateType
+                                                quantity:heartRateForInterval
+                                               startDate:startTime
+                                                 endDate:endTime];
+                
+                // Insert into sample array
+                [samples addObject:heartRateForIntervalSample];
+                
+                // Insert into healthkit
+                [self->hkstore addSamples:samples toWorkout:workout completion:^(BOOL success, NSError *error) {
+                    
+                }];
+            }
+        }];
     }
-    
-    //Add to Health Kit - TODO
 }
 
 -(void)showAlert :(NSString *)message{
@@ -1486,7 +1592,8 @@
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex],
+                            [HKObjectType workoutType]
                             ];
     
         hkstore = [[HKHealthStore alloc] init];
