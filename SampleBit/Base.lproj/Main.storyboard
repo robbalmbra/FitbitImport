@@ -400,6 +400,34 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Qy2-Z9-h8k">
+                                        <rect key="frame" x="0.0" y="618.33333333333337" width="414" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Qy2-Z9-h8k" id="DZs-F2-w0z">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Background Mode" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="dnD-AG-GDO">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="140" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Feh-Ow-g5d">
+                                                    <rect key="frame" x="347" y="6.3333333333333321" width="51" height="30.999999999999996"/>
+                                                    <connections>
+                                                        <action selector="BackgroundSwitch:" destination="YNg-mf-tmN" eventType="valueChanged" id="vzo-c3-HJv"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="trailing" secondItem="Feh-Ow-g5d" secondAttribute="trailing" constant="18" id="CsP-Gu-XoE"/>
+                                                <constraint firstItem="dnD-AG-GDO" firstAttribute="leading" secondItem="DZs-F2-w0z" secondAttribute="leading" constant="20" id="Qx9-ES-rbW"/>
+                                                <constraint firstItem="dnD-AG-GDO" firstAttribute="centerY" secondItem="DZs-F2-w0z" secondAttribute="centerY" id="l5v-8a-48K"/>
+                                                <constraint firstItem="Feh-Ow-g5d" firstAttribute="centerY" secondItem="DZs-F2-w0z" secondAttribute="centerY" id="qoc-Qk-Cas"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                         </sections>
@@ -411,6 +439,9 @@
                     <tabBarItem key="tabBarItem" systemItem="more" id="ZLh-Ix-XeV"/>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="BackgroundSwitch" destination="Feh-Ow-g5d" id="0WD-Qz-rCh"/>
+                        <outlet property="BackgroundSwitchText" destination="dnD-AG-GDO" id="ZOf-HP-PBy"/>
+                        <outlet property="BackgroundSwitchUI" destination="DZs-F2-w0z" id="TTA-xs-G9C"/>
                         <outlet property="DarkModeSwitch" destination="d9b-mT-O6S" id="qA3-Eq-h8l"/>
                         <outlet property="DarkModeSwitchText" destination="gdA-1l-skZ" id="qIn-Ii-0xd"/>
                         <outlet property="DarkModeSwitchUI" destination="ehU-6B-o9o" id="yjC-17-YAD"/>

@@ -23,6 +23,7 @@
     __weak IBOutlet UISwitch *EnergyProfileSwitch;
     __weak IBOutlet UISwitch *NutrientsProfileSwitch;
     __weak IBOutlet UISwitch *WeightProfileSwitch;
+    __weak IBOutlet UISwitch *BackgroundSwitch;
     __weak IBOutlet UISwitch *DarkModeSwitch;
     __weak IBOutlet UITableView *settingsView;
     __weak IBOutlet UITableViewCell *syncsettings;
@@ -42,6 +43,8 @@
     __weak IBOutlet UILabel *NutrientsSwitchText;
     __weak IBOutlet UILabel *EnergySwitchText;
     __weak IBOutlet UIView *EnergySwitchUI;
+    __weak IBOutlet UILabel *BackgroundSwitchText;
+    __weak IBOutlet UIView *BackgroundSwitchUI;
     __weak IBOutlet UILabel *WaterSwitchText;
     __weak IBOutlet UIView *WaterSwitchUI;
     __weak IBOutlet UIView *DarkModeSwitchUI;
@@ -57,6 +60,10 @@
 
 - (IBAction)WeightSwitch:(UISwitch *)sender {
     [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"weightSwitch"];
+}
+
+- (IBAction)BackgroundSwitch:(UISwitch *)sender {
+    [[NSUserDefaults standardUserDefaults] setBool:sender.isOn forKey:@"backgroundSwitch"];
 }
 
 - (IBAction)NutrientsSwitch:(UISwitch *)sender {
@@ -116,7 +123,8 @@
         WaterSwitchText.textColor = [UIColor whiteColor];
         WeightSwitchUI.backgroundColor = [UIColor blackColor];
         WeightSwitchText.textColor = [UIColor whiteColor];
-        
+        BackgroundSwitchUI.backgroundColor = [UIColor blackColor];
+        BackgroundSwitchText.textColor = [UIColor whiteColor];
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else{
@@ -145,6 +153,8 @@
         WaterSwitchText.textColor = [UIColor blackColor];
         WeightSwitchUI.backgroundColor = [UIColor whiteColor];
         WeightSwitchText.textColor = [UIColor blackColor];
+        BackgroundSwitchUI.backgroundColor = [UIColor whiteColor];
+        BackgroundSwitchText.textColor = [UIColor blackColor];
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
@@ -152,8 +162,20 @@
 
 -(void)viewWillAppear:(BOOL)animated
 {
+    
+    
+    // Background Switch - Change switch state from NSUserDefaults
+    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"backgroundSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"backgroundSwitch"] == nil) {
+        [BackgroundSwitch setOn:NO];
+    }else  if (switchState == false) {
+        [BackgroundSwitch setOn:NO];
+    }else{
+        [BackgroundSwitch setOn:YES];
+    }
+    
     // Heart Rate Switch - Change switch state from NSUserDefaults
-    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"heartSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"heartSwitch"] == nil) {
         [HeartProfileSwitch setOn:YES];
     }else  if (switchState == false) {
