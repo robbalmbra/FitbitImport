@@ -249,7 +249,6 @@
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
     if(distanceSwitch){
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?afterDate=%@T00:00:00&sort=asc&limit=20&offset=0",startDate];
-        NSLog(@"%@", url);
         entity = [NSString stringWithFormat:@"distance"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -401,6 +400,14 @@
     return date;
 }
 
+// Return device information
+- (HKDevice *) ReturnDeviceInfo
+{
+    HKDevice *device = [[HKDevice alloc] initWithName:@"Fitbit" manufacturer:@"Fitbit" model:@"-" hardwareVersion:@"-" firmwareVersion:@"2.1" softwareVersion:@"1.1" localIdentifier:@"1.1" UDIDeviceIdentifier:@"a5b2e8f9d2a983e3a9d3e21"];
+    
+    return device;
+}
+
 // Return metadata to avoid duplication of data
 - (NSDictionary *) ReturnMetadata:(NSString *) type date:(NSString *) date
 {
@@ -447,7 +454,7 @@
 
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Bmi" date:DateStitch];
-        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:weightSample];
     }
     
@@ -496,7 +503,7 @@
 
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Weight" date:DateStitch];
-        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:weightSample];
     }
 
@@ -563,7 +570,7 @@
     {
         [self UpdateSQL:[summary objectForKey:@"carbs"] type:@"Carbs" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Carbs" date:DateStitch];
-        HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:carbsSample];
     }
 
@@ -572,7 +579,7 @@
     {
         [self UpdateSQL:[summary objectForKey:@"fat"] type:@"Fat" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Fat" date:DateStitch];
-        HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:fatSample];
     }
 
@@ -581,7 +588,7 @@
     {
         [self UpdateSQL:[summary objectForKey:@"fiber"] type:@"Fiber" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Fiber" date:DateStitch];
-        HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:fiberSample];
     }
 
@@ -590,7 +597,7 @@
     {
         [self UpdateSQL:[summary objectForKey:@"protein"] type:@"Protein" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Protein" date:DateStitch];
-        HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:proteinSample];
     }
 
@@ -599,7 +606,7 @@
     {
         [self UpdateSQL:[summary objectForKey:@"sodium"] type:@"Sodium" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Sodium" date:DateStitch];
-        HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate metadata:metadata];
+        HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
 
@@ -652,7 +659,7 @@
 
         // Create sample
         HKQuantity *quantity = [HKQuantity quantityWithUnit:energy doubleValue:value];
-        HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime metadata:metadata];
+        HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime device:[self ReturnDeviceInfo] metadata:metadata];
 
         // Add sample to array
         [energyArray addObject:calSample];
@@ -700,7 +707,7 @@
           HKMetadataKeySyncVersion: nowEpochSeconds};
 
         // Create sample
-        HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 metadata:metadata];
+        HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 device:[self ReturnDeviceInfo] metadata:metadata];
 
         if(value != 0){
             [self UpdateSQL:[entry objectForKey:@"value"] type:@"Water" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
@@ -836,7 +843,7 @@
           HKMetadataKeySyncVersion: nowEpochSeconds};
 
         // Create Sample with floors value
-        HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorsType quantity:quantity startDate:date endDate:date metadata:metadata];
+        HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorsType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
         
         // Insert into healthkit and return response error or success
         [hkstore saveObject:floorSample withCompletion:^(BOOL success, NSError *error){
@@ -902,7 +909,7 @@
           HKMetadataKeySyncVersion: nowEpochSeconds};
 
         // Create Sample with floors value
-        HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date metadata:metadata];
+        HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
 
         // Insert into healthkit and return response error or success
         [hkstore saveObject:stepSample withCompletion:^(BOOL success, NSError *error){
@@ -1005,7 +1012,7 @@
             NSDictionary * metadata = [self ReturnMetadata:@"Steps" date:dates];
             
             // Create Sample with step value
-            HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date metadata:metadata];
+            HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
             
             // Add to sample array
             [stepSamples addObject:stepSample];
@@ -1043,7 +1050,7 @@
             NSDictionary * metadata = [self ReturnMetadata:@"Asleep" date:[entry objectForKey:@"datetime"]];
 
             // Create sample
-            HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate metadata:metadata];
+            HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo] metadata:metadata];
 
             // Add to sample array
             [sleepSamples addObject:sleepSample];
@@ -1088,7 +1095,7 @@
             NSDictionary * metadata = [self ReturnMetadata:@"Floors" date:dates];
 
             // Create Sample with step value
-            HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorType quantity:quantity startDate:date endDate:date metadata:metadata];
+            HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
 
             // Add to sample array
             [floorSamples addObject:floorSample];
@@ -1133,7 +1140,7 @@
             NSDictionary * metadata = [self ReturnMetadata:@"Weight" date:dates];
             
             // Create Sample with step value
-            HKQuantitySample * weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:quantity startDate:date endDate:date metadata:metadata];
+            HKQuantitySample * weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
             
             // Add to sample array
             [weightSamples addObject:weightSample];
@@ -1178,7 +1185,7 @@
             NSDictionary * metadata = [self ReturnMetadata:@"Bmi" date:dates];
 
             // Create Sample with step value
-            HKQuantitySample * bmiSample = [HKQuantitySample quantitySampleWithType:bmiType quantity:quantity startDate:date endDate:date metadata:metadata];
+            HKQuantitySample * bmiSample = [HKQuantitySample quantitySampleWithType:bmiType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
 
             // Add to sample array
             [bmiSamples addObject:bmiSample];
@@ -1240,7 +1247,7 @@
         [self UpdateSQL:@"0" type:@"Sleep" date1:[self convertDateTimetoString:startDate] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertDateTimetoString:endDate]];
         
         // Get start and end of sleep
-        HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate metadata:metadata];
+        HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo] metadata:metadata];
 
         // Insert into healthkit and return response error or success
         [hkstore saveObject:sleepSample withCompletion:^(BOOL success, NSError *error){
@@ -1264,7 +1271,7 @@
         workoutType = HKWorkoutActivityTypeWalking;
     }else if([activityName  isEqual: @"Outdoor Bike"]){
         workoutType = HKWorkoutActivityTypeCycling;
-    }else if([activityName isEqual: @"Running"]){
+    }else if([activityName isEqual: @"Run"]){
         workoutType = HKWorkoutActivityTypeRunning;
     }
 
@@ -1272,11 +1279,12 @@
         // Create metadata and workout
         NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime];
         workout = [HKWorkout workoutWithActivityType:workoutType
-                                                      startDate:StartDate
-                                                        endDate:EndDate
+                                                       startDate:StartDate
+                                                       endDate:EndDate
                                                        duration:0
-                                              totalEnergyBurned:calories
-                                                  totalDistance:0
+                                                       totalEnergyBurned:calories
+                                                       totalDistance:0
+                                                       device:[self ReturnDeviceInfo]
                                                        metadata:metadata];
     }else{
         
@@ -1295,6 +1303,7 @@
                                                        duration:0
                                               totalEnergyBurned:calories
                                                   totalDistance:distance2
+                                                       device:[self ReturnDeviceInfo]
                                                        metadata:metadata];
     }
     
@@ -1311,10 +1320,9 @@
 
     for(NSDictionary * entry in activities){
 
-        NSLog(@"%@", entry);
-        
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
+        double stepCount = [[entry objectForKey:@"steps"] doubleValue];
 
         double distance = [[entry objectForKey:@"distance"] doubleValue];
         double calories = [[entry objectForKey:@"calories"] doubleValue];
@@ -1335,7 +1343,21 @@
             if(success) {
                 // Sample Array
                 NSMutableArray *samples = [NSMutableArray array];
+
+                // Steps for workout insert into samples
+                HKQuantityType *stepsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+                HKQuantity *stepsForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count"] doubleValue:stepCount];
                 
+                // Create sample
+                HKQuantitySample *stepCountIntervalSample =
+                [HKQuantitySample quantitySampleWithType:stepsType
+                                                quantity:stepsForInterval
+                                               startDate:startTime
+                                                 endDate:endTime];
+
+                // Insert into sample array
+                [samples addObject:stepCountIntervalSample];
+            
                 // Heart rate average insert into samples
                 HKQuantityType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
                 HKQuantity *heartRateForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count/min"] doubleValue:averageHeartRate];
@@ -1346,10 +1368,10 @@
                                                 quantity:heartRateForInterval
                                                startDate:startTime
                                                  endDate:endTime];
-                
+
                 // Insert into sample array
                 [samples addObject:heartRateForIntervalSample];
-                
+
                 // Insert into healthkit
                 [self->hkstore addSamples:samples toWorkout:workout completion:^(BOOL success, NSError *error) {
                     
@@ -1408,7 +1430,7 @@
         
         NSString * url = @"https://api.fitbit.com/1/user/-/profile.json";
         [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
-           
+
             // Get user id
             NSDictionary * data = [responseObject objectForKey:@"user"];
             NSString * userid = [data objectForKey:@"encodedId"];
