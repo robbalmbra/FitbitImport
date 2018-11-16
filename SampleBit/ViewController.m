@@ -53,6 +53,11 @@
     self->nearestHour = -1;
 }
 
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+
+}
+
 -(void)viewWillAppear:(BOOL)animated
 {
     // Water Switch
