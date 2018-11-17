@@ -306,6 +306,7 @@
         entity = [NSString stringWithFormat:@"bmi"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
+
     // Return array
     return array;
 }
@@ -408,6 +409,7 @@
 // Return device information
 - (HKDevice *) ReturnDeviceInfo
 {
+
     HKDevice *device = [[HKDevice alloc] initWithName:@"Fitbit" manufacturer:@"Fitbit" model:@"-" hardwareVersion:@"-" firmwareVersion:@"2.1" softwareVersion:@"1.1" localIdentifier:@"1.1" UDIDeviceIdentifier:@"a5b2e8f9d2a983e3a9d3e21"];
     
     return device;
@@ -418,11 +420,12 @@
 {
     NSDate *now = [NSDate date];
     NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-
+    
     NSString *identifer = AS(date,type);
     NSMutableDictionary *meta = [[NSMutableDictionary alloc] init];
     [meta setObject:identifer forKey:HKMetadataKeySyncIdentifier];
     [meta setObject:nowEpochSeconds forKey:HKMetadataKeySyncVersion];
+    [meta setObject:@2 forKey:HKMetadataKeyHeartRateSensorLocation];
 
     // add extra key/values from extra to metadata
     if(extra != nil){
@@ -431,6 +434,11 @@
         }
     }
     return meta;
+}
+
+- (void) ProcessTest: (NSDictionary *) jsonData
+{
+    printf("%s",[[jsonData description] UTF8String]);
 }
 
 - (void) ProcessBmi:( NSDictionary *) jsonData
@@ -1211,7 +1219,7 @@
 }
 
 // Get workout
-- (HKWorkout *) GetWorkout:(NSString *)activityName startDate:(NSDate *)StartDate endDate:(NSDate *)EndDate rawData:(NSString *) RawDateTime calories:(HKQuantity *) calories distance:(double) distance speed:(NSString *) speed pace:(NSString *) pace
+- (HKWorkout *) GetWorkout:(NSString *)activityName startDate:(NSDate *)StartDate endDate:(NSDate *)EndDate rawData:(NSString *) RawDateTime calories:(HKQuantity *) calories distance:(double) distance speed:(NSString *) speed pace:(NSString *) pace steps:(NSString *) steps elevation:(NSString *) elevation
 {
     __block NSUInteger workoutType;
     __block HKWorkout *workout;
@@ -1227,7 +1235,21 @@
 
     if(distance == 0){
         // Create metadata and workout
-        NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:nil];
+        NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
+        if(steps != nil){
+            [MetaOptions setObject:steps forKey:@"Step Count"];
+        }
+
+        if(elevation != nil){
+            double elevationr = [elevation doubleValue];
+            if(elevationr < 0){
+                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationDescended];
+            }else{
+                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationAscended];
+            }
+        }
+        
+        NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
         workout = [HKWorkout workoutWithActivityType:workoutType
                                                        startDate:StartDate
                                                        endDate:EndDate
@@ -1249,14 +1271,26 @@
         NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
         [MetaOptions setObject:speed forKey:HKMetadataKeyAverageSpeed]; //average speed
         [MetaOptions setObject:pace forKey:@"Pace"];
-
+        if(steps != nil){
+            [MetaOptions setObject:steps forKey:@"Step Count"];
+        }
+        
+        if(elevation != nil){
+            double elevationr = [elevation doubleValue];
+            if(elevationr < 0){
+                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationDescended];
+            }else{
+                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationAscended];
+            }
+        }
+        
         // Create metadata and workout
         NSMutableDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
 
         workout = [HKWorkout workoutWithActivityType:workoutType
                                                       startDate:StartDate
                                                         endDate:EndDate
-                                                       duration:0
+                                                        duration:0
                                               totalEnergyBurned:calories
                                                   totalDistance:distance2
                                                        device:[self ReturnDeviceInfo]
@@ -1276,13 +1310,17 @@
 
     for(NSDictionary * entry in activities){
         
+        printf("%s",[[entry description] UTF8String]);
+        
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
-        double stepCount = [[entry objectForKey:@"steps"] doubleValue];
+        
+        NSString * stepCount = [entry objectForKey:@"steps"];
 
         double distance = [[entry objectForKey:@"distance"] doubleValue];
         double calories = [[entry objectForKey:@"calories"] doubleValue];
         double averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
+        NSString * elevation = [entry objectForKey:@"elevationGain"];
         double speedr = [[entry objectForKey:@"speed"] doubleValue];
         double pacer = [[entry objectForKey:@"pace"] doubleValue];
         
@@ -1297,32 +1335,21 @@
         HKQuantity *energyBurned = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
 
         // Create workout and return workout
-        workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace];
+        workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
 
         // Insert into healthkit and return response error or success
         [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
+
                 // Sample Array
                 NSMutableArray *samples = [NSMutableArray array];
-
-                // Steps for workout insert into samples
-                HKQuantityType *stepsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-                HKQuantity *stepsForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count"] doubleValue:stepCount];
                 
-                // Create sample
-                HKQuantitySample *stepCountIntervalSample =
-                [HKQuantitySample quantitySampleWithType:stepsType
-                                                quantity:stepsForInterval
-                                               startDate:startTime
-                                                 endDate:endTime];
-
-                // Insert into sample array
-                [samples addObject:stepCountIntervalSample];
-            
+                //Cal
+                
                 // Heart rate average insert into samples
                 HKQuantityType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
                 HKQuantity *heartRateForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count/min"] doubleValue:averageHeartRate];
-                
+
                 // Create sample
                 HKQuantitySample *heartRateForIntervalSample =
                 [HKQuantitySample quantitySampleWithType:heartRateType
