@@ -39,6 +39,8 @@
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
 
+typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
@@ -239,9 +241,12 @@
 
     //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
     if(stepsSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/%@.json",startDate, endDate];
-        entity = [NSString stringWithFormat:@"steps"];
-        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        for(i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/1d/1min.json",dateNow];
+            entity = [NSString stringWithFormat:@"steps"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
     }
 
     ////////////////////////////////////////////// Get floor data //////////////////////////////////////////////////
@@ -860,47 +865,60 @@
 // Steps
 - (void) ProcessSteps:( NSDictionary * ) jsonData
 {
-    // Access root container
-    NSArray * out = [jsonData objectForKey:@"activities-steps"];
+    double steps;
+    NSDate * startDateTime;
+    NSDate * endDateTime;
+    HKQuantity *quantity;
+    NSDictionary * metadata;
+    HKQuantitySample * stepSample;
+    NSString * startDateString;
+
+    // Sample array
+    NSMutableArray *stepArray = [NSMutableArray array];
 
     // Define type
     HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-
+    
     // Define unit
     HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
+
+    // Retrieve date
+    NSArray * out = [jsonData objectForKey:@"activities-steps"];
+    NSDictionary * block = out[0];
+    NSString * currentDate = [block objectForKey:@"dateTime"];
     
-    // Access day container
-    for(int i=0; i< ([out count]); i++){
-        NSDictionary *block = out[i];
+    // Access intraday data
+    NSArray * stepsIntraday = [[jsonData objectForKey:@"activities-steps-intraday"] objectForKey:@"dataset"];
 
-        // Retrieve variables from json data
-        double steps = [[block objectForKey:@"value"] doubleValue];
-        NSString * dates = AS([block objectForKey:@"dateTime"], @" 12:00:00");
-        NSDate * date = [self convertDate:dates];
-        
-        // Get timestamp now
-        NSDate *now = [NSDate date];
-        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
+    // Iterate over results
+    for(NSDictionary * entry in stepsIntraday){
 
-        // Update
-        [self UpdateSQL:[block objectForKey:@"value"] type:@"Steps" date1:[block objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[block objectForKey:@"dateTime"]];
+        // Retrieve step count
+        steps = [[entry objectForKey:@"value"] doubleValue];
 
-        // Define quantity
-        HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
-        NSString *identifer = AS(dates,@"Steps");
-        
-        NSDictionary * metadata =
-        @{HKMetadataKeySyncIdentifier: identifer,
-          HKMetadataKeySyncVersion: nowEpochSeconds};
+        // Skip zero step count
+        if(steps == 0){
+            continue;
+        }
 
-        // Create Sample with floors value
-        HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
+        // Calculate date/time
+        startDateString = AS(AS(currentDate, @" "),[entry objectForKey:@"time"]);
+        startDateTime = [self convertDate:startDateString];
+        endDateTime = [startDateTime dateByAddingTimeInterval:60];
 
-        // Insert into healthkit and return response error or success
-        [hkstore saveObject:stepSample withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
-        }];
+        // Create Sample
+        metadata = [self ReturnMetadata:@"Steps" date:startDateString extra:nil];
+        quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
+        stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:startDateTime endDate:endDateTime metadata:metadata];
+
+        // Add to sample array
+        [stepArray addObject:stepSample];
     }
+
+    // Insert into healthkit and return response error or success
+    [hkstore saveObjects:stepArray withCompletion:^(BOOL success, NSError *error){
+        if(error){ NSLog(@"%@", error); }
+    }];
 }
 
 - (NSDate *)convertDate:(NSString *) Simpledate{
@@ -1221,7 +1239,7 @@
 // Get workout
 - (HKWorkout *) GetWorkout:(NSString *)activityName startDate:(NSDate *)StartDate endDate:(NSDate *)EndDate rawData:(NSString *) RawDateTime calories:(HKQuantity *) calories distance:(double) distance speed:(NSString *) speed pace:(NSString *) pace steps:(NSString *) steps elevation:(NSString *) elevation
 {
-    __block NSUInteger workoutType;
+    __block NSUInteger workoutType = 0;
     __block HKWorkout *workout;
 
     // Select activity type
@@ -1306,18 +1324,20 @@
 {
     NSArray * activities = [jsonData objectForKey:@"activities"];
     __block NSUInteger workoutType;
+    __block NSString * txcFile;
+    __block double distance;
     HKWorkout *workout;
 
     for(NSDictionary * entry in activities){
-        
-        printf("%s",[[entry description] UTF8String]);
+
+        //printf("%s",[[entry description] UTF8String]);
         
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
         
         NSString * stepCount = [entry objectForKey:@"steps"];
 
-        double distance = [[entry objectForKey:@"distance"] doubleValue];
+        distance = [[entry objectForKey:@"distance"] doubleValue];
         double calories = [[entry objectForKey:@"calories"] doubleValue];
         double averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
         NSString * elevation = [entry objectForKey:@"elevationGain"];
@@ -1341,11 +1361,15 @@
         [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
 
+                // Check if distance exists to see if gps is available
+                dispatch_group_t group = dispatch_group_create();
+                if(distance != 0){
+                    [self ProcessTCX: speed];
+                }
+
                 // Sample Array
                 NSMutableArray *samples = [NSMutableArray array];
-                
-                //Cal
-                
+
                 // Heart rate average insert into samples
                 HKQuantityType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
                 HKQuantity *heartRateForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count/min"] doubleValue:averageHeartRate];
@@ -1399,6 +1423,44 @@
         // Installed
         return 1;
     }
+}
+
+- (void) ProcessTCX :( NSString * ) url
+{
+
+    //dispatch_group_enter(group);
+    
+    // Get userid from URL
+    NSString *token = [FitbitAuthHandler getToken];
+    FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
+
+    // Request URL
+    [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
+        // do something with responseObject
+        
+
+        // Leave
+        //dispatch_group_leave(group);
+        
+    } failure:^(NSError *error) {
+        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
+        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
+        NSArray *errors = [errorResponse valueForKey:@"errors"];
+        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"];
+        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
+            // To perform login if token is expired
+            [self->fitbitAuthHandler login:self];
+            return;
+        }
+        // Leave
+        //dispatch_group_leave(group);
+    }];
+    
+    //dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        //Add route workout
+        //responseObject
+        
+    //});
 }
 
 -(void)getFitbitUserID{
