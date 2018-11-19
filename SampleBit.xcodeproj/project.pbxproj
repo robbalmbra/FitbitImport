@@ -11,6 +11,7 @@
 		00FB012E1EC468880004C6F9 /* FitbitAuthHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 00FB012B1EC468880004C6F9 /* FitbitAuthHandler.m */; };
 		467060DD660B7E4607416F2D /* libPods-SampleBit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DA7EE1F816B4BA55F14F98CB /* libPods-SampleBit.a */; };
 		A74C4B95218BC6AF00C15108 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A74C4B94218BC6AF00C15108 /* SettingsViewController.m */; };
+		A76FC69221A171EC00B46A30 /* XMLReader.m in Sources */ = {isa = PBXBuildFile; fileRef = A76FC69121A171EC00B46A30 /* XMLReader.m */; };
 		A780FE402192EE3300C70B86 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A780FE3F2192EE3300C70B86 /* HealthKit.framework */; };
 		AE6142E31E2F2E5200D582DC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E21E2F2E5200D582DC /* main.m */; };
 		AE6142E61E2F2E5200D582DC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E51E2F2E5200D582DC /* AppDelegate.m */; };
@@ -30,6 +31,8 @@
 		78BF7901C936A9FD330B96C3 /* Pods-SampleBit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SampleBit.debug.xcconfig"; path = "Pods/Target Support Files/Pods-SampleBit/Pods-SampleBit.debug.xcconfig"; sourceTree = "<group>"; };
 		A74C4B94218BC6AF00C15108 /* SettingsViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SettingsViewController.m; sourceTree = "<group>"; };
 		A74C4B96218BC75400C15108 /* SettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
+		A76FC68F21A1717100B46A30 /* XMLReader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XMLReader.h; sourceTree = "<group>"; };
+		A76FC69121A171EC00B46A30 /* XMLReader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XMLReader.m; sourceTree = "<group>"; };
 		A77A23892188DD47009AD794 /* SampleBit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SampleBit.entitlements; sourceTree = "<group>"; };
 		A780FE3F2192EE3300C70B86 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		AE6142DE1E2F2E5200D582DC /* Samplebit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Samplebit.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +82,15 @@
 			name = Pods;
 			sourceTree = "<group>";
 		};
+		A76FC69021A1719100B46A30 /* XMLReader */ = {
+			isa = PBXGroup;
+			children = (
+				A76FC68F21A1717100B46A30 /* XMLReader.h */,
+				A76FC69121A171EC00B46A30 /* XMLReader.m */,
+			);
+			path = XMLReader;
+			sourceTree = "<group>";
+		};
 		AE6142D51E2F2E5200D582DC = {
 			isa = PBXGroup;
 			children = (
@@ -102,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				A77A23892188DD47009AD794 /* SampleBit.entitlements */,
+				A76FC69021A1719100B46A30 /* XMLReader */,
 				00FB01271EC468880004C6F9 /* FitbitExplorer */,
 				AE6142E41E2F2E5200D582DC /* AppDelegate.h */,
 				AE6142E51E2F2E5200D582DC /* AppDelegate.m */,
@@ -264,6 +277,7 @@
 				A74C4B95218BC6AF00C15108 /* SettingsViewController.m in Sources */,
 				AE6142E31E2F2E5200D582DC /* main.m in Sources */,
 				00FB012E1EC468880004C6F9 /* FitbitAuthHandler.m in Sources */,
+				A76FC69221A171EC00B46A30 /* XMLReader.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

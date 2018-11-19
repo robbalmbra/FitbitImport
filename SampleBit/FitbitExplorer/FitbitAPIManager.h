@@ -13,6 +13,6 @@
 @interface FitbitAPIManager : NSObject
 + (instancetype)sharedManager;
 
--(void)requestGET:(NSString *)strURL Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure;
+-(void)requestGET:(NSString *)strURL xml:(BOOL)xml Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure;
 -(void)requestPOST:(NSString *)strURL Parameter:(NSDictionary *)param Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure;
 @end

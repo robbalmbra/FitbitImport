@@ -162,8 +162,6 @@
 
 -(void)viewWillAppear:(BOOL)animated
 {
-    
-    
     // Background Switch - Change switch state from NSUserDefaults
     BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"backgroundSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"backgroundSwitch"] == nil) {

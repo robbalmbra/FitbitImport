@@ -7,6 +7,7 @@
 //
 
 #import "FitbitAPIManager.h"
+#import "../XMLReader/XMLReader.h"
 
 @implementation FitbitAPIManager {
     NSURLSession *session;
@@ -21,7 +22,7 @@
     return _sharedManager;
 }
 
--(void)requestGET:(NSString *)strURL Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure {
+-(void)requestGET:(NSString *)strURL xml:(BOOL)xml Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure {
     
     BOOL isNetworkAvailable = [self checkNetConnection];
     
@@ -29,23 +30,33 @@
         [self showAlert:@"Please check your internet connection"];
     }
     else {
-          AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+        AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
         [manager.requestSerializer setValue:[NSString stringWithFormat:@"Bearer %@",token] forHTTPHeaderField:@"Authorization"];
+
+        if(xml){
+            // Content xml
+            manager.responseSerializer = [AFHTTPResponseSerializer new];
+            manager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/vnd.garmin.tcx+xml", nil];
+        }else{
+            // Content json
+            manager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", nil];
+        }
         
-        manager.responseSerializer.acceptableContentTypes = [manager.responseSerializer.acceptableContentTypes setByAddingObject:@"text/json"];
         [manager GET:strURL parameters:nil progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
             if([responseObject isKindOfClass:[NSDictionary class]]) {
+                // Return json
                 if(success) {
                     success(responseObject);
                 }
             }
             else {
-                NSDictionary *response = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
-                if(success) {
-                    success(response);
+                // Return xml to nsdictionary
+                if(success){
+                    NSString* responseStr = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
+                    NSDictionary * XMLDictionary = [XMLReader dictionaryForXMLString:responseStr error:nil];
+                    success(XMLDictionary);
                 }
             }
-            
         } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
             if(failure) {
                 failure(error);
@@ -73,10 +84,10 @@
                 }
             }
             else {
-                NSDictionary *response = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
-                if(success) {
-                    success(response);
-                }
+                //NSDictionary *response = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
+                //if(success) {
+                //    success(response);
+                //}
             }
 
         } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {

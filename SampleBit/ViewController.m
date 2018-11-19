@@ -8,6 +8,7 @@
 
 #import "ViewController.h"
 #import "FitbitExplorer.h"
+@import CoreLocation;
 @import HealthKit;
 
 @interface ViewController ()
@@ -31,10 +32,12 @@
     __block BOOL weightSwitch;
     __block NSString *userid;
     __block HKHealthStore *hkstore;
+    __block NSString *tcxLink;
     __block BOOL isRed;
     __block BOOL isDarkMode;
     __block BOOL apiNoRequests;
     __block NSInteger nearestHour;
+    __block NSString * distance;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -443,7 +446,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
 - (void) ProcessTest: (NSDictionary *) jsonData
 {
-    printf("%s",[[jsonData description] UTF8String]);
+    //printf("%s",[[jsonData description] UTF8String]);
 }
 
 - (void) ProcessBmi:( NSDictionary *) jsonData
@@ -1323,21 +1326,22 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 - (void) ProcessDistance:( NSDictionary * ) jsonData
 {
     NSArray * activities = [jsonData objectForKey:@"activities"];
+    __block NSString * testdist;
     __block NSUInteger workoutType;
-    __block NSString * txcFile;
     __block double distance;
+    
     HKWorkout *workout;
 
     for(NSDictionary * entry in activities){
-
-        //printf("%s",[[entry description] UTF8String]);
         
+        NSString * startDateRaw = [entry objectForKey:@"startTime"];
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
         
         NSString * stepCount = [entry objectForKey:@"steps"];
 
         distance = [[entry objectForKey:@"distance"] doubleValue];
+        
         double calories = [[entry objectForKey:@"calories"] doubleValue];
         double averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
         NSString * elevation = [entry objectForKey:@"elevationGain"];
@@ -1351,20 +1355,64 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         int duration = [[entry objectForKey:@"duration"] intValue];
         NSDate * endTime = [startTime dateByAddingTimeInterval:duration/1000.0];
 
+        // TxcFile
+        NSString * httplink = [entry objectForKey:@"tcxLink"];
+
         // Create and declare calories type
         HKQuantity *energyBurned = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
 
         // Create workout and return workout
         workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
-
+        
         // Insert into healthkit and return response error or success
         [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
-
                 // Check if distance exists to see if gps is available
-                dispatch_group_t group = dispatch_group_create();
-                if(distance != 0){
-                    [self ProcessTCX: speed];
+                if([entry objectForKey:@"distance"] != nil){
+                    // Test if workout route exists on the device to optimize api requests - TODO
+                    dispatch_group_t group = dispatch_group_create();
+                    [self ProcessTCX:httplink group:group completion:^(NSDictionary * xml, NSError * error) {
+
+                        // Declare route builder
+                        HKWorkoutRouteBuilder *routeBuilder = [[HKWorkoutRouteBuilder alloc] initWithHealthStore:self->hkstore device:[self ReturnDeviceInfo]];
+
+                        // Get Latitude/Longitude array
+                        NSArray * points = [[[[[[xml objectForKey:@"TrainingCenterDatabase"] objectForKey:@"Activities"] objectForKey:@"Activity"] objectForKey:@"Lap"] objectForKey:@"Track"] objectForKey:@"Trackpoint"];
+
+                        // Define route location array
+                        NSMutableArray *routeArray = [NSMutableArray array];
+
+                        [routeArray removeAllObjects];
+                        
+                        // Retrieve lat/long on each point
+                        for(NSDictionary * latlong in points){
+                            NSDictionary * container = [latlong objectForKey:@"Position"];
+                            double latitude = [[[container objectForKey:@"LatitudeDegrees"] objectForKey:@"text"] doubleValue];
+                            double longitude = [[[container objectForKey:@"LongitudeDegrees"] objectForKey:@"text"] doubleValue];
+                            double altitude = [[[latlong objectForKey:@"AltitudeMeters"] objectForKey:@"text"] doubleValue];
+
+                            // Timestamp
+                            NSDate * timestamp = [self convertDateTimeZ:[[latlong objectForKey:@"Time"] objectForKey:@"text"]];
+
+                            CLLocation *test = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:altitude horizontalAccuracy:-1 verticalAccuracy:-1 timestamp:timestamp];
+
+                            // Add to route array
+                            [routeArray addObject:test];
+                        }
+                        
+                        [routeBuilder insertRouteData:routeArray completion:^(BOOL success, NSError * _Nullable error) {
+                            if(error){
+                                NSLog(@"%@", error);
+                            }else{
+                                NSMutableDictionary * metadata = [self ReturnMetadata:@"WorkoutRoute" date:startDateRaw extra:nil];
+                                [routeBuilder finishRouteWithWorkout:workout metadata:(metadata) completion:^(HKWorkoutRoute * _Nullable workoutRoute, NSError * _Nullable error) {
+                                    
+                                    //NSLog(@"%@", workoutRoute);
+                                }];
+                                [routeArray removeAllObjects];
+                            }
+                        }];
+                    }];
                 }
 
                 // Sample Array
@@ -1425,42 +1473,32 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     }
 }
 
-- (void) ProcessTCX :( NSString * ) url
+- (void) ProcessTCX :( NSString * ) url group:(dispatch_group_t)group completion:(ButtonCompletionBlock)completionBlock
 {
-
-    //dispatch_group_enter(group);
+    // Enter group
+    dispatch_group_enter(group);
     
-    // Get userid from URL
     NSString *token = [FitbitAuthHandler getToken];
     FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-
-    // Request URL
-    [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
-        // do something with responseObject
+    
+    // Get URL
+    [manager requestGET:url xml:1 Token:token success:^(NSDictionary *responseObject) {
         
-
+        // Return json dict
+        completionBlock(responseObject,nil);
+    
         // Leave
-        //dispatch_group_leave(group);
+        dispatch_group_leave(group);
         
     } failure:^(NSError *error) {
-        NSData * errorData = (NSData *)error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
-        NSDictionary *errorResponse =[NSJSONSerialization JSONObjectWithData:errorData options:NSJSONReadingAllowFragments error:nil];
-        NSArray *errors = [errorResponse valueForKey:@"errors"];
-        NSString *errorType = [[errors objectAtIndex:0] valueForKey:@"errorType"];
-        if ([errorType isEqualToString:fInvalid_Client] || [errorType isEqualToString:fExpied_Token] || [errorType isEqualToString:fInvalid_Token]|| [errorType isEqualToString:fInvalid_Request]) {
-            // To perform login if token is expired
-            [self->fitbitAuthHandler login:self];
-            return;
-        }
-        // Leave
-        //dispatch_group_leave(group);
-    }];
-    
-    //dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-        //Add route workout
-        //responseObject
         
-    //});
+        // Return error
+        completionBlock(nil,error);
+    
+        // Leave
+        dispatch_group_leave(group);
+
+    }];
 }
 
 -(void)getFitbitUserID{
@@ -1479,7 +1517,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
         
         NSString * url = @"https://api.fitbit.com/1/user/-/profile.json";
-        [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
+        [manager requestGET:url xml:0 Token:token success:^(NSDictionary *responseObject) {
 
             // Get user id
             NSDictionary * data = [responseObject objectForKey:@"user"];
@@ -1545,7 +1583,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
 
         // Get URL
-        [manager requestGET:url Token:token success:^(NSDictionary *responseObject) {
+        [manager requestGET:url xml:0 Token:token success:^(NSDictionary *responseObject) {
 
             // Update interface with message, passed from entity
             self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
@@ -1665,12 +1703,19 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex],
-                            [HKObjectType workoutType]
+                            [HKObjectType workoutType],
+                            [HKSeriesType workoutRouteType]
                             ];
+
+    // Read Types
+    NSArray *readTypes =@[
+                           [HKObjectType workoutType],
+                           [HKSeriesType workoutRouteType]
+                         ];
     
         hkstore = [[HKHealthStore alloc] init];
         [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
-                                        readTypes:nil
+                                        readTypes:[NSSet setWithArray:readTypes]
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
         if(error){
@@ -1750,6 +1795,16 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                 HKObjectType *protein = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein];
                 HKAuthorizationStatus proteinStatus = [self->hkstore authorizationStatusForType:protein];
                 errorCount += [self checktype:proteinStatus];
+            }
+            
+            if(self->distanceSwitch){
+                HKObjectType *workoutType = [HKObjectType workoutType];
+                HKAuthorizationStatus workoutTypeStatus = [self->hkstore authorizationStatusForType:workoutType];
+                errorCount += [self checktype:workoutTypeStatus];
+                
+                HKSeriesType *workoutRouteType = [HKSeriesType workoutRouteType];
+                HKAuthorizationStatus workoutRouteTypeStatus = [self->hkstore authorizationStatusForType:workoutRouteType];
+                errorCount += [self checktype:workoutRouteTypeStatus];
             }
 
             // Weight
