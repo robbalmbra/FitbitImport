@@ -39,6 +39,7 @@
     __block NSInteger nearestHour;
     __block NSString * distance;
     __block NSMutableArray * workoutArray;
+    __block NSInteger running;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -326,6 +327,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 -(void)notificationDidReceived{
     // Initial message, starting to sync
     if(self->apiNoRequests == 0){
+        self->running = 1;
         resultView.text = @"Syncing data started...";
 
         // Loop over all urls
@@ -1243,6 +1245,19 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     }
 }
 
+- (BOOL) ArrayContains:(NSString *) DateString routeArray:(NSMutableArray *) routeArray
+{
+    BOOL isContains = 0;
+    for(NSString * entry in routeArray){
+        
+        if([entry isEqualToString:DateString]){
+            isContains = 1;
+            break;
+        }
+    }
+    return isContains;
+}
+
 // Get workout
 - (HKWorkout *) GetWorkout:(NSString *)activityName startDate:(NSDate *)StartDate endDate:(NSDate *)EndDate rawData:(NSString *) RawDateTime calories:(HKQuantity *) calories distance:(double) distance speed:(NSString *) speed pace:(NSString *) pace steps:(NSString *) steps elevation:(NSString *) elevation
 {
@@ -1256,7 +1271,41 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         workoutType = HKWorkoutActivityTypeCycling;
     }else if([activityName isEqual: @"Run"]){
         workoutType = HKWorkoutActivityTypeRunning;
+    }else if([activityName isEqualToString:@"Hike"]){
+        workoutType = HKWorkoutActivityTypeHiking;
+    }else if([activityName isEqualToString:@"Sport"]){
+        workoutType = HKWorkoutActivityTypeOther;
+    }else if([activityName isEqualToString:@"Golf"]){
+        workoutType = HKWorkoutActivityTypeGolf;
+    }else if([activityName isEqualToString:@"Swim"]){
+        workoutType = HKWorkoutActivityTypeSwimming;
+    }else if([activityName isEqualToString:@"Tennis"]){
+        workoutType = HKWorkoutActivityTypeTennis;
+    }else if([activityName isEqualToString:@"Elliptical"]){
+        workoutType = HKWorkoutActivityTypeElliptical;
+    }else if([activityName isEqualToString:@"Kickboxing"]){
+        workoutType = HKWorkoutActivityTypeKickboxing;
+    }else if([activityName isEqualToString:@"Pilates"]){
+        workoutType = HKWorkoutActivityTypePilates;
+    }else if([activityName isEqualToString:@"Martial Arts"]){
+        workoutType = HKWorkoutActivityTypeMartialArts;
+    }else if([activityName isEqualToString:@"Yoga"]){
+        workoutType = HKWorkoutActivityTypeYoga;
+    }else if([activityName isEqualToString:@"Interval Workout"]){
+        workoutType = HKWorkoutActivityTypeHighIntensityIntervalTraining;
+    }else if([activityName isEqualToString:@"Circuit Training"]){
+        workoutType = HKWorkoutActivityTypeCoreTraining;
+    }else if([activityName isEqualToString:@"Stairclimber"]){
+        workoutType = HKWorkoutActivityTypeStairClimbing;
+    }else if([activityName isEqualToString:@"Weights"]){
+        workoutType = HKWorkoutActivityTypeTraditionalStrengthTraining;
+    }else if([activityName isEqualToString:@"Spinning"]){
+        workoutType = HKWorkoutActivityTypeBarre;
+    }else{
+        workoutType = HKWorkoutActivityTypeOther;
     }
+    
+    // Others may be supported - add above in future
     
     if(distance == 0){
         // Create metadata and workout
@@ -1341,8 +1390,10 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         NSString * startDateRaw = [entry objectForKey:@"startTime"];
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
-        
         NSString * stepCount = [entry objectForKey:@"steps"];
+        
+        // Print activity type
+        NSLog(@"Parsing activity workout `%@`.", activityName);
 
         distance = [[entry objectForKey:@"distance"] doubleValue];
         
@@ -1368,11 +1419,10 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         // Create workout and return workout
         workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
 
-        // Test if workout route exists within array
-        if([workoutArray containsObject: [entry objectForKey:@"startTime"]]){
+        if([self ArrayContains:[entry objectForKey:@"startTime"] routeArray:workoutArray]){
             continue;
         }
-
+        
         // Add workout
         [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
 
@@ -1380,13 +1430,11 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
                 // Check if distance exists to see if gps is available
-                if([entry objectForKey:@"distance"] != nil){
+                if([entry objectForKey:@"distance"] != nil && [entry objectForKey:@"tcxLink"] != nil){
+                    
                     dispatch_group_t group = dispatch_group_create();
                     [self ProcessTCX:httplink group:group completion:^(NSDictionary * xml, NSError * error) {
-
-                        // Declare route builder
-                        HKWorkoutRouteBuilder *routeBuilder = [[HKWorkoutRouteBuilder alloc] initWithHealthStore:self->hkstore device:[self ReturnDeviceInfo]];
-
+                    
                         // Get Latitude/Longitude array
                         NSArray * points = [[[[[[xml objectForKey:@"TrainingCenterDatabase"] objectForKey:@"Activities"] objectForKey:@"Activity"] objectForKey:@"Lap"] objectForKey:@"Track"] objectForKey:@"Trackpoint"];
 
@@ -1411,18 +1459,26 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                             [routeArray addObject:test];
                         }
                         
-                        [routeBuilder insertRouteData:routeArray completion:^(BOOL success, NSError * _Nullable error) {
-                            if(error){
-                                NSLog(@"%@", error);
-                            }else{
-                                NSMutableDictionary * metadata = [self ReturnMetadata:@"WorkoutRoute" date:startDateRaw extra:nil];
-                                [routeBuilder finishRouteWithWorkout:workout metadata:(metadata) completion:^(HKWorkoutRoute * _Nullable workoutRoute, NSError * _Nullable error) {
-                                    
-                                    //NSLog(@"%@", workoutRoute);
-                                }];
-                                [routeArray removeAllObjects];
-                            }
-                        }];
+                        if([routeArray count] > 0){
+                            
+                            // Declare route builder
+                            HKWorkoutRouteBuilder *routeBuilder = [[HKWorkoutRouteBuilder alloc] initWithHealthStore:self->hkstore device:[self ReturnDeviceInfo]];
+                            
+                            [routeBuilder insertRouteData:routeArray completion:^(BOOL success, NSError * _Nullable error) {
+                                if(error){
+                                    NSLog(@"%@", error);
+                                }else{
+                                    NSMutableDictionary * metadata = [self ReturnMetadata:@"WorkoutRoute" date:startDateRaw extra:nil];
+                                    [routeBuilder finishRouteWithWorkout:workout metadata:(metadata) completion:^(HKWorkoutRoute * _Nullable workoutRoute, NSError * _Nullable error) {
+                                        
+                                        //NSLog(@"%@", workoutRoute);
+                                    }];
+                                    [routeArray removeAllObjects];
+                                }
+                            }];
+                        }else{
+                            [routeArray removeAllObjects];
+                        }
                     }];
                 }
 
@@ -1563,10 +1619,20 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                 [self InstallHistoricData];
             }
 
+            self->running = 1;
+            
+            if(self->isDarkMode == 1){
+                self->resultView.textColor = [UIColor whiteColor];
+            }else{
+                self->resultView.textColor = [UIColor blackColor];
+            }
+            
             // Retrieve over
             [self getFitbitURL];
         }else{
+            self->resultView.textColor = [UIColor redColor];
             self->resultView.text = @"Too many requests, try again later...";
+            self->running = 0;
         }
     });
 }
@@ -1634,7 +1700,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
             
             // Detect too many requests
             NSString *message = [[errors objectAtIndex:0] valueForKey:@"message"];
-            if([message isEqual: @"Too Many Requests"]){
+            if([message isEqual: @"Too Many Requests"] || errors == nil){
                 NSDate *now = [NSDate date];
                 NSInteger nowEpochSeconds = [now timeIntervalSince1970];
                 
@@ -1642,8 +1708,17 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                 self->nearestHour = (new_number + 3600) + 15;
 
                 self->apiNoRequests = 1;
+                self->running = 0;
+                self->resultView.textColor = [UIColor redColor];
                 self->resultView.text = @"Too many requests, try again later...";
             }else{
+                if(self->isDarkMode == 1){
+                    self->resultView.textColor = [UIColor whiteColor];
+                }else{
+                    self->resultView.textColor = [UIColor blackColor];
+                }
+                
+                self->running = 1;
                 self->apiNoRequests = 0;
                 self->nearestHour = -1;
             }
@@ -1654,6 +1729,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
         if(self->apiNoRequests == 0){
+            self->running = 0;
             self->resultView.text = @"Sync Complete";
         }
     });
@@ -1677,6 +1753,13 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
 - (IBAction)actionLogin:(UIButton *)sender {
 
+    if(self->running == 1){
+        return;
+    }else{
+        NSLog(@"Not Running");
+        self->running = 1;
+    }
+    
     // Check if internet available
     BOOL isNetworkAvailable = [self checkNetConnection];
     if (!isNetworkAvailable) {
@@ -1694,8 +1777,16 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     }
 
     if(self->apiNoRequests == 1){
+        self->resultView.textColor = [UIColor redColor];
         self->resultView.text = @"Too many requests, try again later...";
+        self->running = 0;
         return;
+    }else{
+        if(self->isDarkMode == 1){
+            self->resultView.textColor = [UIColor whiteColor];
+        }else{
+            self->resultView.textColor = [UIColor blackColor];
+        }
     }
 
     // Write types attributes
