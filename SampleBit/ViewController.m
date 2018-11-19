@@ -38,6 +38,7 @@
     __block BOOL apiNoRequests;
     __block NSInteger nearestHour;
     __block NSString * distance;
+    __block NSMutableArray * workoutArray;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -56,6 +57,9 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     
     self->apiNoRequests = 0;
     self->nearestHour = -1;
+
+    //Define array if ns array is not set
+    self->workoutArray = [NSMutableArray new];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -1253,7 +1257,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     }else if([activityName isEqual: @"Run"]){
         workoutType = HKWorkoutActivityTypeRunning;
     }
-
+    
     if(distance == 0){
         // Create metadata and workout
         NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
@@ -1363,13 +1367,20 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
         // Create workout and return workout
         workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
-        
+
+        // Test if workout route exists within array
+        if([workoutArray containsObject: [entry objectForKey:@"startTime"]]){
+            continue;
+        }
+
+        // Add workout
+        [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
+
         // Insert into healthkit and return response error or success
         [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
                 // Check if distance exists to see if gps is available
                 if([entry objectForKey:@"distance"] != nil){
-                    // Test if workout route exists on the device to optimize api requests - TODO
                     dispatch_group_t group = dispatch_group_create();
                     [self ProcessTCX:httplink group:group completion:^(NSDictionary * xml, NSError * error) {
 
@@ -1706,16 +1717,10 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                             [HKObjectType workoutType],
                             [HKSeriesType workoutRouteType]
                             ];
-
-    // Read Types
-    NSArray *readTypes =@[
-                           [HKObjectType workoutType],
-                           [HKSeriesType workoutRouteType]
-                         ];
     
         hkstore = [[HKHealthStore alloc] init];
         [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
-                                        readTypes:[NSSet setWithArray:readTypes]
+                                        readTypes:nil
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
         if(error){

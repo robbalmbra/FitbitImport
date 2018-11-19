@@ -289,7 +289,8 @@
         WaterSwitchText.textColor = [UIColor blackColor];
         WeightSwitchUI.backgroundColor = [UIColor whiteColor];
         WeightSwitchText.textColor = [UIColor blackColor];
-        
+        BackgroundSwitchUI.backgroundColor = [UIColor whiteColor];
+        BackgroundSwitchText.textColor = [UIColor blackColor];
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }else if (switchState == false) {
@@ -321,6 +322,8 @@
         WaterSwitchText.textColor = [UIColor blackColor];
         WeightSwitchUI.backgroundColor = [UIColor whiteColor];
         WeightSwitchText.textColor = [UIColor blackColor];
+        BackgroundSwitchUI.backgroundColor = [UIColor whiteColor];
+        BackgroundSwitchText.textColor = [UIColor blackColor];
     
     }else{
         [DarkModeSwitch setOn:YES];
@@ -350,6 +353,9 @@
         EnergySwitchText.textColor = [UIColor whiteColor];
         WaterSwitchUI.backgroundColor = [UIColor blackColor];
         WaterSwitchText.textColor = [UIColor whiteColor];
+        
+        BackgroundSwitchUI.backgroundColor = [UIColor blackColor];
+        BackgroundSwitchText.textColor = [UIColor whiteColor];
         
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
