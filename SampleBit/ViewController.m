@@ -269,13 +269,11 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     }
 }
 
-- (void)hkQueryExecute:(NSDate *) startDate endDate:(NSDate *) endDate completion:(QueryCompletetionBlock)completionBlock{
-    // Check which sleep data have been downloaded to healthkit
-    HKSampleType *sleepType = [HKSampleType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
-    
+- (void)hkQueryExecute:(NSDate *) startDate type:(HKSampleType *)type endDate:(NSDate *) endDate completion:(QueryCompletetionBlock)completionBlock{
+
     NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
 
-    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:sleepType predicate:predicate limit:0 sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
+    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type predicate:predicate limit:0 sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
         if (!results) {
             NSLog(@"An error occured fetching the user's sleep duration. In your app, try to handle this gracefully. The error was: %@.", error);
             completionBlock(0, error);
@@ -310,11 +308,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     
     if(sleepSwitch){
         // Test if data exists, if all exists skip
-        [self hkQueryExecute:[self str2date:startDate] endDate:[self str2date:endDate] completion:^(NSInteger count, NSError *error) {
+        HKSampleType *type = [HKSampleType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
+        
+        // Query
+        [self hkQueryExecute:[self str2date:startDate] type:type endDate:[self str2date:endDate] completion:^(NSInteger count, NSError *error) {
             if(count != Days){
                 url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
                 entity = [NSString stringWithFormat:@"sleep"];
                 [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+            }else{
+                NSLog(@"Skipping Sleep - Already inserted into healthkit.");
             }
         }];
     }
@@ -342,7 +345,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
     if(distanceSwitch){
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T00:00:00&sort=desc&limit=20&offset=0",endDate];
-        entity = [NSString stringWithFormat:@"distance"];
+        entity = [NSString stringWithFormat:@"workout"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
 
@@ -386,10 +389,13 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     
     ///////////////////////////////////////////////////// Weight ///////////////////////////////////////////////////
     if(weightSwitch){
+        
+        //Weight
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/weight/date/%@/%@.json",startDate, endDate];
         entity = [NSString stringWithFormat:@"weight"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         
+        //BMI
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/bmi/date/%@/%@.json",startDate, endDate];
         entity = [NSString stringWithFormat:@"bmi"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -1535,7 +1541,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 }
 
 // Distance
-- (void) ProcessDistance:( NSDictionary * ) jsonData
+- (void) ProcessWorkout:( NSDictionary * ) jsonData
 {
     NSArray * activities = [jsonData objectForKey:@"activities"];
     __block double distance;
@@ -1550,7 +1556,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         NSString * stepCount = [entry objectForKey:@"steps"];
         
         // Print activity type
-        NSLog(@"Parsing activity workout `%@`.", activityName);
+        NSLog(@"    Parsing activity workout `%@`.", activityName);
 
         distance = [[entry objectForKey:@"distance"] doubleValue];
         
