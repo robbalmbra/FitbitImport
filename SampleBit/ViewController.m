@@ -48,6 +48,7 @@
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
 
 typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
+typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -268,6 +269,30 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     }
 }
 
+- (void)hkQueryExecute:(NSDate *) startDate endDate:(NSDate *) endDate completion:(QueryCompletetionBlock)completionBlock{
+    // Check which sleep data have been downloaded to healthkit
+    HKSampleType *sleepType = [HKSampleType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
+    
+    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
+
+    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:sleepType predicate:predicate limit:0 sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
+        if (!results) {
+            NSLog(@"An error occured fetching the user's sleep duration. In your app, try to handle this gracefully. The error was: %@.", error);
+            completionBlock(0, error);
+            abort();
+        }
+        
+        // Retrieve count
+        NSInteger totalCount = [results count];
+        
+        // Return count
+        completionBlock(totalCount, error);
+    }];
+    
+    // Run query
+    [self->hkstore executeQuery:query];
+}
+
 // Generate URLS for dispatch group
 -(NSMutableArray *)generateURLS{
     // url, entity name
@@ -276,20 +301,22 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     /////////////////////////////////////////////// Get sleep data //////////////////////////////////////////////////
     NSString *startDate = [self calcDate:3];
     NSString *endDate = [self dateNow];
-    NSString *entity;
-    NSString *url;
+    __block NSString *entity;
+    __block NSString *url;
     
     // How many days to process (today - Days);
     NSInteger Days = 3;
     int i = 0;
     
     if(sleepSwitch){
-        
-        // Check which sleep data have been downloaded to healthkit - TODO
-        
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
-        entity = [NSString stringWithFormat:@"sleep"];
-        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        // Test if data exists, if all exists skip
+        [self hkQueryExecute:[self str2date:startDate] endDate:[self str2date:endDate] completion:^(NSInteger count, NSError *error) {
+            if(count != Days){
+                url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
+                entity = [NSString stringWithFormat:@"sleep"];
+                [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+            }
+        }];
     }
 
     //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
@@ -1953,9 +1980,14 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                             [HKSeriesType workoutRouteType]
                             ];
     
+    NSArray *readTypes = @[
+                           [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis]
+                          ];
+    
+    
         hkstore = [[HKHealthStore alloc] init];
         [hkstore requestAuthorizationToShareTypes:[NSSet setWithArray:writeTypes]
-                                        readTypes:nil
+                                        readTypes:[NSSet setWithArray:readTypes]
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
         if(error){
