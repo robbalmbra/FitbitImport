@@ -36,10 +36,13 @@
     __block BOOL isRed;
     __block BOOL isDarkMode;
     __block BOOL apiNoRequests;
+    __block BOOL backgroundMode;
+    __block BOOL backgroundModeOn;
     __block NSInteger nearestHour;
     __block NSString * distance;
     __block NSMutableArray * workoutArray;
     __block NSInteger running;
+    
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -48,6 +51,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
     // Do any additional setup after loading the view, typically from a nib.
     fitbitAuthHandler = [[FitbitAuthHandler alloc]init:self] ;
  
@@ -55,6 +59,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     resultView.layer.borderWidth     = 0.0f;
     [[NSNotificationCenter defaultCenter]
      addObserver:self selector:@selector(notificationDidReceived) name:FitbitNotification object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidEnterBackground:)
+                                                 name:UIApplicationDidEnterBackgroundNotification
+                                               object:nil];
+    
     
     self->apiNoRequests = 0;
     self->nearestHour = -1;
@@ -65,11 +75,30 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-
+    //retrieve background value
+    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"backgroundSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"backgroundSwitch"] == nil || (switchState == false)) {
+        // Turned off
+        self->backgroundMode = 0;
+        self->backgroundModeOn = 0;
+    }else{
+        if(self->running == 0){
+            
+            //Add code here for multiple requests in the background - TODO
+            
+            // Turned on
+            self->backgroundMode = 1;
+            self->backgroundModeOn = 1;
+            self->running = 1;
+            NSLog(@"Running background mode");
+            [self getFitbitUserID];
+        }
+    }
 }
 
 -(void)viewWillAppear:(BOOL)animated
 {
+    
     // Water Switch
     BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"waterSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"waterSwitch"] == nil) {
@@ -187,6 +216,19 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         weightSwitch = 1;
     }
 
+    // Weight
+    switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"backgroundSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"backgroundSwitch"] == nil) {
+        // No set
+        backgroundMode = 0;
+    }else  if (switchState == false) {
+        // Turned off
+        backgroundMode = 0;
+    }else{
+        // Turned on
+        backgroundMode = 1;
+    }
+    
     // Dark Mode Switch
     switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil) {
@@ -251,7 +293,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     if(stepsSwitch){
         for(i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/1d/1min.json",dateNow];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/1d/15min.json",dateNow];
             entity = [NSString stringWithFormat:@"steps"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
@@ -266,7 +308,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
     if(distanceSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?afterDate=%@T00:00:00&sort=asc&limit=20&offset=0",startDate];
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T00:00:00&sort=desc&limit=20&offset=0",endDate];
         entity = [NSString stringWithFormat:@"distance"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -482,7 +524,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         // Create quantity type
         weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
 
-        // Update
+        // Update bmi to mysql
         [self UpdateSQL:[day objectForKey:@"value"] type:@"Bmi" date1:[day objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[day objectForKey:@"dateTime"]];
 
         // Create sample and add to sample array
@@ -527,7 +569,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         // Create quantity type
         weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
 
-        // Update
+        // Update weight to mysql
         [self UpdateSQL:[day objectForKey:@"value"] type:@"Weight" date1:[day objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[day objectForKey:@"dateTime"]];
 
         // Create sample and add to sample array
@@ -593,6 +635,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     // Carbs
     if(carbs != 0)
     {
+        // Update carbs to mysql
         [self UpdateSQL:[summary objectForKey:@"carbs"] type:@"Carbs" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Carbs" date:DateStitch extra:nil];
         HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
@@ -602,6 +645,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     // Fat
     if(fat != 0)
     {
+        // Update fat to mysql
         [self UpdateSQL:[summary objectForKey:@"fat"] type:@"Fat" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Fat" date:DateStitch extra:nil];
         HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
@@ -611,6 +655,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     // Fiber
     if(fiber != 0)
     {
+        // Update fiber to mysql
         [self UpdateSQL:[summary objectForKey:@"fiber"] type:@"Fiber" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Fiber" date:DateStitch extra:nil];
         HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
@@ -620,6 +665,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     // Protein
     if(protein != 0)
     {
+        // Update protein to mysql
         [self UpdateSQL:[summary objectForKey:@"protein"] type:@"Protein" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Protein" date:DateStitch extra:nil];
         HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
@@ -629,12 +675,14 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     //Sodium
     if(sodium != 0)
     {
+        // Update sodium to mysql
         [self UpdateSQL:[summary objectForKey:@"sodium"] type:@"Sodium" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Sodium" date:DateStitch extra:nil];
         HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
 
+    // Update healthkit
     if([sampleArray count] > 0)
     {
         // Add to healthkit - carbs
@@ -685,10 +733,13 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         // Add sample to array
         [energyArray addObject:calSample];
     }
-    // Add to healthkit
-    [hkstore saveObjects:energyArray withCompletion:^(BOOL success, NSError *error){
-        if(error){ NSLog(@"%@", error); }
-    }];
+    
+    if([energyArray count] > 0){
+        // Add to healthkit
+        [hkstore saveObjects:energyArray withCompletion:^(BOOL success, NSError *error){
+            if(error){ NSLog(@"%@", error); }
+        }];
+    }
 }
 
 // Get water drank
@@ -773,9 +824,6 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     // If 0 dont insert
     if(restingHR != 0){
         // Update
-        NSDate *now = [NSDate date];
-        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
     
@@ -804,10 +852,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         [bpmArray addObject:hrSample];
     }
 
-    // Add to healthkit
-    [hkstore saveObjects:bpmArray withCompletion:^(BOOL success, NSError *error){
-        if(error){ NSLog(@"%@", error); }
-    }];
+    if([bpmArray count] > 0){
+        // Add to healthkit
+        [hkstore saveObjects:bpmArray withCompletion:^(BOOL success, NSError *error){
+            if(error){ NSLog(@"%@", error); }
+        }];
+    }
 }
 
 // Floors walked
@@ -882,9 +932,6 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     HKQuantitySample * stepSample;
     NSString * startDateString;
 
-    // Sample array
-    NSMutableArray *stepArray = [NSMutableArray array];
-
     // Define type
     HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
     
@@ -899,37 +946,57 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     // Access intraday data
     NSArray * stepsIntraday = [[jsonData objectForKey:@"activities-steps-intraday"] objectForKey:@"dataset"];
 
+    double stepCount = 0;
+    NSInteger count = 1;
+    NSString * output = @"";
+    
     // Iterate over results
     for(NSDictionary * entry in stepsIntraday){
 
         // Retrieve step count
         steps = [[entry objectForKey:@"value"] doubleValue];
+        stepCount += steps;
+        
+        // Update array
+        if(count % 4 == 0){
+            
+            if(count != 4){
+                output = AS(output, @",");
+            }
+            
+            // Add to output array string
+            NSNumber *myDoubleNumber = [NSNumber numberWithDouble:stepCount];
+            output = AS(output,[myDoubleNumber stringValue]);
+            
+            // Calculate date/time
+            startDateString = AS(AS(currentDate, @" "),[entry objectForKey:@"time"]);
+            startDateTime = [[self convertDate:startDateString] dateByAddingTimeInterval:-(45*60)];
+            endDateTime = [startDateTime dateByAddingTimeInterval:60*60];
 
-        // Skip zero step count
-        if(steps == 0){
-            continue;
+            // Create Sample
+            metadata = [self ReturnMetadata:@"Steps" date:[self convertStringtoDate:startDateTime] extra:nil];
+            quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:stepCount];
+            stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:startDateTime endDate:endDateTime metadata:metadata];
+            
+            // Insert into healthkit and return response error or success
+            [hkstore saveObject:stepSample withCompletion:^(BOOL success, NSError *error){
+                if(error){ NSLog(@"%@", error); }
+            }];
+
+            // Set stepcount to 0
+            stepCount = 0;
         }
-
-        // Calculate date/time
-        startDateString = AS(AS(currentDate, @" "),[entry objectForKey:@"time"]);
-        startDateTime = [self convertDate:startDateString];
-        endDateTime = [startDateTime dateByAddingTimeInterval:60];
-
-        // Create Sample
-        metadata = [self ReturnMetadata:@"Steps" date:startDateString extra:nil];
-        quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:steps];
-        stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:startDateTime endDate:endDateTime metadata:metadata];
-
-        // Add to sample array
-        [stepArray addObject:stepSample];
+        count+=1;
     }
-
-    // Insert into healthkit and return response error or success
-    [hkstore saveObjects:stepArray withCompletion:^(BOOL success, NSError *error){
-        if(error){ NSLog(@"%@", error); }
-    }];
+    
+    // Flush
+    output = @"";
+    
+    // Add sample
+    [self UpdateSQL:output type:@"Steps" date1:currentDate insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:currentDate];
 }
 
+// String -> Date (simple notation)
 - (NSDate *)convertDate:(NSString *) Simpledate{
     NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
     [dateFormat setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
@@ -939,6 +1006,15 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     NSString *finalStr = [dateFormat stringFromDate:date];
     NSDate *dateFromString = [dateFormat dateFromString:finalStr];
     return dateFromString;
+}
+
+// Date -> String (simple notation)
+- (NSString *)convertStringtoDate:(NSDate *) Simpledate{
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
+    NSString *date = [dateFormat stringFromDate:Simpledate];
+    return date;
 }
 
 // String -> Date with Z
@@ -989,49 +1065,59 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 // Method to get historic data
 - (void) InstallHistoricData
 {
-    // TODO - Wrap this method in dispatch_group to avoid function taking too long??!? -maybe, may be too long???
-    
     ////////////////////////////////////////////////// Steps /////////////////////////////////////////////////////
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Steps", self->userid]];
     NSArray * results = [self GetHistoricData:url];
-
+    
     // Only parse valid content
     if([results count] > 0){
 
         // Define type
         HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-
+        
         // Define unit
         HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
+        NSTimeInterval secondsInAnHour = 1 * 60 * 60;
 
-        NSMutableArray *stepSamples = [NSMutableArray array];
-        
-        // Loop over entries
+        // Loop over entries - Iterate over days
         for(NSDictionary *entry in results){
-            double value = [[entry objectForKey:@"value"] doubleValue];
-            NSString * time = [entry objectForKey:@"time"];
-            NSString * dates = AS(AS([entry objectForKey:@"datetime"],@" "),time);
+            // Starting time
+            NSString * Basedate = @"00:00:00";
+            NSString * dates = AS(AS([entry objectForKey:@"datetime"],@" "),Basedate);
             NSDate * date = [self convertDate:dates];
 
-            // Define quantity
-            HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:value];
+            // Get values
+            NSString * values = [entry objectForKey:@"value"];
+            NSArray *items = [values componentsSeparatedByString:@","];
 
-            // Get metadate for stopping duplication
-            NSDictionary * metadata = [self ReturnMetadata:@"Steps" date:dates extra:nil];
-            
-            // Create Sample with step value
-            HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
-            
-            // Add to sample array
-            [stepSamples addObject:stepSample];
-            
-            // Insert into healthkit and return response error or success
-            [hkstore saveObjects:stepSamples withCompletion:^(BOOL success, NSError *error){
-                if(error){ NSLog(@"%@", error); }
-            }];
+            for(NSString * value in items){
+
+                // Get step value
+                double stepCount = [value doubleValue];
+
+                // Define quantity
+                HKQuantity *quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:stepCount];
+
+                // Get metadate for stopping duplication
+                NSString * dateString = [self convertStringtoDate:date];
+                NSDictionary * metadata = [self ReturnMetadata:@"Steps" date:dateString extra:nil];
+
+                // Calculate end time
+                NSDate * endtime = [date dateByAddingTimeInterval:secondsInAnHour];
+
+                // Create sample
+                HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:endtime device:[self ReturnDeviceInfo] metadata:metadata];
+                
+                // Insert into healthkit and return response error or success
+                [hkstore saveObject:stepSample withCompletion:^(BOOL success, NSError *error){
+                    if(error){ NSLog(@"%@", error); }
+                }];
+                
+                date = [date dateByAddingTimeInterval:secondsInAnHour];
+            }
         }
     }
-
+    
     ////////////////////////////////////////////////// Sleep /////////////////////////////////////////////////////
     url = [NSURL URLWithString:[NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/query.php?entity=%@&uid=%@", @"Sleep", self->userid]];
     results = [self GetHistoricData:url];
@@ -1060,10 +1146,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
             [sleepSamples addObject:sleepSample];
         }
 
-        // Insert into healthkit and return response error or success
-        [hkstore saveObjects:sleepSamples withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
-        }];
+        if([sleepSamples count] > 0){
+            // Insert into healthkit and return response error or success
+            [hkstore saveObjects:sleepSamples withCompletion:^(BOOL success, NSError *error){
+                if(error){ NSLog(@"%@", error); }
+            }];
+        }
     }
 
     ////////////////////////////////////////////////// Floors /////////////////////////////////////////////////////
@@ -1101,10 +1189,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
             [floorSamples addObject:floorSample];
         }
         
-        // Insert into healthkit and return response error or success
-        [hkstore saveObjects:floorSamples withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
-        }];
+        if([floorSamples count] > 0){
+            // Insert into healthkit and return response error or success
+            [hkstore saveObjects:floorSamples withCompletion:^(BOOL success, NSError *error){
+                if(error){ NSLog(@"%@", error); }
+            }];
+        }
     }
 
     ////////////////////////////////////////////////// Weight /////////////////////////////////////////////////////
@@ -1142,10 +1232,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
             [weightSamples addObject:weightSample];
         }
         
-        // Insert into healthkit and return response error or success
-        [hkstore saveObjects:weightSamples withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
-        }];
+        if([weightSamples count] > 0){
+            // Insert into healthkit and return response error or success
+            [hkstore saveObjects:weightSamples withCompletion:^(BOOL success, NSError *error){
+                if(error){ NSLog(@"%@", error); }
+            }];
+        }
     }
 
     ////////////////////////////////////////////////// BMI /////////////////////////////////////////////////////
@@ -1184,10 +1276,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
             [bmiSamples addObject:bmiSample];
         }
 
-        // Insert into healthkit and return response error or success
-        [hkstore saveObjects:bmiSamples withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
-        }];
+        if([bmiSamples count] > 0){
+            // Insert into healthkit and return response error or success
+            [hkstore saveObjects:bmiSamples withCompletion:^(BOOL success, NSError *error){
+                if(error){ NSLog(@"%@", error); }
+            }];
+        }
     }
 
     // Completed
@@ -1379,8 +1473,6 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 - (void) ProcessDistance:( NSDictionary * ) jsonData
 {
     NSArray * activities = [jsonData objectForKey:@"activities"];
-    __block NSString * testdist;
-    __block NSUInteger workoutType;
     __block double distance;
     
     HKWorkout *workout;
@@ -1466,7 +1558,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                             
                             [routeBuilder insertRouteData:routeArray completion:^(BOOL success, NSError * _Nullable error) {
                                 if(error){
-                                    NSLog(@"%@", error);
+                                    //NSLog(@"%@", error);
                                 }else{
                                     NSMutableDictionary * metadata = [self ReturnMetadata:@"WorkoutRoute" date:startDateRaw extra:nil];
                                     [routeBuilder finishRouteWithWorkout:workout metadata:(metadata) completion:^(HKWorkoutRoute * _Nullable workoutRoute, NSError * _Nullable error) {
@@ -1607,6 +1699,15 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                 [self->fitbitAuthHandler login:self];
                 return;
             }
+            
+            if(error == nil){
+                if(self->isDarkMode == 1){
+                    self->resultView.textColor = [UIColor whiteColor];
+                }else{
+                    self->resultView.textColor = [UIColor blackColor];
+                }
+                return;
+            }
             // Leave
             dispatch_group_leave(group);
         }];
@@ -1652,19 +1753,24 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         // Retrieve url and activity type
         NSString *url = entity[0];
         __block NSString *type = entity[1];
-
+        
         // Enter group
         dispatch_group_enter(group);
 
         NSString *token = [FitbitAuthHandler getToken];
         FitbitAPIManager *manager = [FitbitAPIManager sharedManager];
-
+        
         // Get URL
         [manager requestGET:url xml:0 Token:token success:^(NSDictionary *responseObject) {
 
+            
+            
             // Update interface with message, passed from entity
-            self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
-
+            printf("%d",self->backgroundModeOn);
+            if(self->backgroundModeOn == 0){
+                self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
+            }
+                
             // Print method to console
             NSLog(@"Running `%@`",type);
             
@@ -1815,7 +1921,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
         if(error){
-            NSLog(@"%@", error);
+            //NSLog(@"%@", error);
         }else{
             NSInteger errorCount = 0;
 

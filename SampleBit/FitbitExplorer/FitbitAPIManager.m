@@ -9,6 +9,8 @@
 #import "FitbitAPIManager.h"
 #import "../XMLReader/XMLReader.h"
 
+#define AS(A,B)    [(A) stringByAppendingString:(B)]
+
 @implementation FitbitAPIManager {
     NSURLSession *session;
 }
@@ -27,12 +29,14 @@
     BOOL isNetworkAvailable = [self checkNetConnection];
     
     if (!isNetworkAvailable) {
+        NSLog(@"No connection");
         [self showAlert:@"Please check your internet connection"];
-    }
-    else {
+        return;
+    }else{
+ 
         AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
         [manager.requestSerializer setValue:[NSString stringWithFormat:@"Bearer %@",token] forHTTPHeaderField:@"Authorization"];
-
+        
         if(xml){
             // Content xml
             manager.responseSerializer = [AFHTTPResponseSerializer new];
@@ -48,8 +52,7 @@
                 if(success) {
                     success(responseObject);
                 }
-            }
-            else {
+            }else{
                 // Return xml to nsdictionary
                 if(success){
                     NSString* responseStr = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
@@ -58,13 +61,14 @@
                 }
             }
         } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+            //NSLog(@"%@", error);
             if(failure) {
                 failure(error);
             }
-            
         }];
     }
 }
+
 -(void)requestPOST:(NSString *)strURL Parameter:(NSDictionary *)param Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure {
     
     BOOL isNetworkAvailable = [self checkNetConnection];
@@ -82,8 +86,7 @@
                 if(success) {
                     success(responseObject);
                 }
-            }
-            else {
+            }else{
                 //NSDictionary *response = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
                 //if(success) {
                 //    success(response);
