@@ -284,6 +284,9 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     int i = 0;
     
     if(sleepSwitch){
+        
+        // Check which sleep data have been downloaded to healthkit - TODO
+        
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
         entity = [NSString stringWithFormat:@"sleep"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -301,9 +304,12 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
     ////////////////////////////////////////////// Get floor data //////////////////////////////////////////////////
     if(floorsSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/%@.json",startDate, endDate];
-        entity = [NSString stringWithFormat:@"floors"];
-        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        for(i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/1d/15min.json",dateNow];
+            entity = [NSString stringWithFormat:@"floors"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
     }
 
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
@@ -867,46 +873,78 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 // Floors walked
 - (void) ProcessFloors:( NSDictionary * ) jsonData
 {
-    // Access root container
-    NSArray * out = [jsonData objectForKey:@"activities-floors"];
+    double floors;
+    NSDate * startDateTime;
+    NSDate * endDateTime;
+    HKQuantity *quantity;
+    NSDictionary * metadata;
+    HKQuantitySample * floorSample;
+    NSString * startDateString;
     
     // Define type
-    HKQuantityType *floorsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
-
-    // Access day container
-    for(int i=0; i< ([out count]); i++){
-        NSDictionary *block = out[i];
+    HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
+    
+    // Define unit
+    HKUnit *floorUnit = [HKUnit unitFromString:@"count"];
+    
+    // Retrieve date
+    NSArray * out = [jsonData objectForKey:@"activities-floors"];
+    NSDictionary * block = out[0];
+    NSString * currentDate = [block objectForKey:@"dateTime"];
+    
+    // Access intraday data
+    NSArray * stepsIntraday = [[jsonData objectForKey:@"activities-floors-intraday"] objectForKey:@"dataset"];
+    
+    double floorCount = 0;
+    NSInteger count = 1;
+    NSString * output = @"";
+    
+    // Iterate over results
+    for(NSDictionary * entry in stepsIntraday){
         
-        // Retrieve variables from json data
-        double floors = [[block objectForKey:@"value"] doubleValue];
-        NSString * dates = AS([block objectForKey:@"dateTime"], @" 12:00:00");
-        NSDate * date = [self convertDate:dates];
-
-        HKUnit *floorUnit = [HKUnit unitFromString:@"count"];
+        // Retrieve step count
+        floors = [[entry objectForKey:@"value"] doubleValue];
+        floorCount += floors;
         
-        //Defined quantity
-        HKQuantity *quantity = [HKQuantity quantityWithUnit:floorUnit doubleValue:floors];
-        
-        NSDate *now = [NSDate date];
-        NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        
-        // Update
-        [self UpdateSQL:[block objectForKey:@"value"] type:@"Floors" date1:[block objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[block objectForKey:@"dateTime"]];
-        
-        // Create meta indetifier to disable duplication of data
-        NSString *identifer = AS(dates,@"Floors");
-        NSDictionary * metadata =
-        @{HKMetadataKeySyncIdentifier: identifer,
-          HKMetadataKeySyncVersion: nowEpochSeconds};
-
-        // Create Sample with floors value
-        HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorsType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
-        
-        // Insert into healthkit and return response error or success
-        [hkstore saveObject:floorSample withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
-        }];
+        // Update array
+        if(count % 4 == 0){
+            
+            if(count != 4){
+                output = AS(output, @",");
+            }
+            
+            // Add to output array string
+            NSNumber *myDoubleNumber = [NSNumber numberWithDouble:floorCount];
+            output = AS(output,[myDoubleNumber stringValue]);
+            
+            // Calculate date/time
+            startDateString = AS(AS(currentDate, @" "),[entry objectForKey:@"time"]);
+            startDateTime = [[self convertDate:startDateString] dateByAddingTimeInterval:-(45*60)];
+            endDateTime = [startDateTime dateByAddingTimeInterval:60*60];
+            
+            // Create Sample
+            metadata = [self ReturnMetadata:@"Floors" date:[self convertStringtoDate:startDateTime] extra:nil];
+            quantity = [HKQuantity quantityWithUnit:floorUnit doubleValue:floorCount];
+            
+            floorSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:startDateTime endDate:endDateTime metadata:metadata];
+            
+            // Insert into healthkit and return response error or success
+            [hkstore saveObject:floorSample withCompletion:^(BOOL success, NSError *error){
+                if(error){ NSLog(@"%@", error); }
+            }];
+            
+            // Set stepcount to 0
+            floorCount = 0;
+        }
+        count+=1;
     }
+    
+    // Add sample
+    [self UpdateSQL:output type:@"Floors" date1:currentDate insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:currentDate];
+
+    // Flush
+    output = @"";
+        
 }
 
 // SQL method to update
@@ -921,6 +959,7 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
     NSString *url = [NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@&date2=%@&time2=%@", entity, date1, value, self->userid, [timestamp stringValue], time1,date2,time2];
 
     NSString * encodeURL = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    //NSLog(@"%@", encodeURL); //debug
     NSURL* url2 = [NSURL URLWithString:encodeURL];
     [NSData dataWithContentsOfURL:url2];
 }
@@ -1290,11 +1329,6 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 
     // Completed
     [[NSUserDefaults standardUserDefaults] setBool:1 forKey:@"DataInstalled"];
-}
-
-- (void) Processtest:( NSDictionary *) jsonData
-{
-    //HKCategoryType *sleepType = [HKObjectType quantityTypeForIdentifier:HKQ];
 }
 
 // Sleep
