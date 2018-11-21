@@ -826,7 +826,11 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         // Update
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
-    
+
+        // Update
+        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] type:@"RestingHR" date1:[self convertStringtoDate:dateTime1] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertStringtoDate:dateTime3]];
+
+        
         // Insert into healthkit and return response error or success
         [hkstore saveObject:hrRestingSample withCompletion:^(BOOL success, NSError *error){
             if(error){ NSLog(@"%@", error); }
@@ -989,11 +993,11 @@ typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
         count+=1;
     }
     
-    // Flush
-    output = @"";
-    
     // Add sample
     [self UpdateSQL:output type:@"Steps" date1:currentDate insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:currentDate];
+    
+    // Flush
+    output = @"";
 }
 
 // String -> Date (simple notation)
