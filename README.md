@@ -8,7 +8,7 @@ IOS application that bridges the gap between Fitbit data and Healthkit. Through 
 
   * Steps (3 days)
   * Sleep (3 days)
-  * Floors Climbed
+  * Floors Climbed (3 days)
   * Workouts (20 recent workouts)
   * Heart Rate (3 days)
   * Resting Heart Rate (3 days)
