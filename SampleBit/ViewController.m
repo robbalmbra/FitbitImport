@@ -270,6 +270,33 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     }
 }
 
+-(void)logText:(NSString *) text {
+    
+    // Retrieve string
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSString * logContent = [[NSUserDefaults standardUserDefaults] objectForKey:@"OutputLog"];
+
+    // Check if logContent is nil
+    if(logContent == nil){
+        logContent = @"";
+    }
+    
+    // Add time prefix
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"hh:mm:ss"];
+    NSString * date = AS(AS(@"[",[formatter stringFromDate:[NSDate date]]),@"] ");
+    
+    // Print message to console
+    NSLog(@"%@", text);
+    
+    // Append to string
+    NSString * outputContent = AS(logContent,AS(date,AS(text,@"\n")));
+
+    // Save
+    [defaults setValue:outputContent forKey:@"OutputLog"];
+    [defaults synchronize];
+}
+
 // Generate URLS for dispatch group
 -(NSMutableArray *)generateURLS{
 
@@ -1809,15 +1836,14 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Get URL
         [manager requestGET:url xml:0 Token:token success:^(NSDictionary *responseObject) {
 
-            
-            
             // Update interface with message, passed from entity
             if(self->backgroundModeOn == 0){
-                self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
+                self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
             }
                 
-            // Print method to console
-            NSLog(@"Running `%@`",type);
+            // Print method to console and log
+            NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
+            [self logText:output];
             
             // Pass data to individual methods for processing
             NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
@@ -1903,10 +1929,12 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 }
 
 - (IBAction)actionLogin:(UIButton *)sender {
-
+    
     if(self->running == 1){
         return;
     }else{
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setValue:@"" forKey:@"OutputLog"];
         NSLog(@"Not Running");
         self->running = 1;
     }

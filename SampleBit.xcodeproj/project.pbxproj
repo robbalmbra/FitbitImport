@@ -13,6 +13,7 @@
 		A74C4B95218BC6AF00C15108 /* SettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A74C4B94218BC6AF00C15108 /* SettingsViewController.m */; };
 		A76FC69221A171EC00B46A30 /* XMLReader.m in Sources */ = {isa = PBXBuildFile; fileRef = A76FC69121A171EC00B46A30 /* XMLReader.m */; };
 		A780FE402192EE3300C70B86 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A780FE3F2192EE3300C70B86 /* HealthKit.framework */; };
+		A7EF744E21A706C500F5E640 /* LogViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A7EF744D21A706C500F5E640 /* LogViewController.m */; };
 		AE6142E31E2F2E5200D582DC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E21E2F2E5200D582DC /* main.m */; };
 		AE6142E61E2F2E5200D582DC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E51E2F2E5200D582DC /* AppDelegate.m */; };
 		AE6142E91E2F2E5200D582DC /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AE6142E81E2F2E5200D582DC /* ViewController.m */; };
@@ -35,6 +36,8 @@
 		A76FC69121A171EC00B46A30 /* XMLReader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XMLReader.m; sourceTree = "<group>"; };
 		A77A23892188DD47009AD794 /* SampleBit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SampleBit.entitlements; sourceTree = "<group>"; };
 		A780FE3F2192EE3300C70B86 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		A7EF744D21A706C500F5E640 /* LogViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LogViewController.m; sourceTree = "<group>"; };
+		A7EF744F21A706FC00F5E640 /* LogViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LogViewController.h; sourceTree = "<group>"; };
 		AE6142DE1E2F2E5200D582DC /* Samplebit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Samplebit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE6142E21E2F2E5200D582DC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AE6142E41E2F2E5200D582DC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -122,6 +125,8 @@
 				AE6142E81E2F2E5200D582DC /* ViewController.m */,
 				A74C4B96218BC75400C15108 /* SettingsViewController.h */,
 				A74C4B94218BC6AF00C15108 /* SettingsViewController.m */,
+				A7EF744F21A706FC00F5E640 /* LogViewController.h */,
+				A7EF744D21A706C500F5E640 /* LogViewController.m */,
 				AE6142ED1E2F2E5200D582DC /* Assets.xcassets */,
 				AE6142EA1E2F2E5200D582DC /* Main.storyboard */,
 				AE6142EF1E2F2E5200D582DC /* LaunchScreen.storyboard */,
@@ -278,6 +283,7 @@
 				AE6142E31E2F2E5200D582DC /* main.m in Sources */,
 				00FB012E1EC468880004C6F9 /* FitbitAuthHandler.m in Sources */,
 				A76FC69221A171EC00B46A30 /* XMLReader.m in Sources */,
+				A7EF744E21A706C500F5E640 /* LogViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
