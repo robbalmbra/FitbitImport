@@ -104,6 +104,7 @@
                     </view>
                     <tabBarItem key="tabBarItem" title="Log" image="document" selectedImage="document" id="Dhg-vi-jlI"/>
                     <connections>
+                        <outlet property="LogViewTitleTop" destination="grb-Vx-pYr" id="4Nk-sd-ASR"/>
                         <outlet property="logView" destination="6ir-KY-g8r" id="qha-Gb-4HQ"/>
                     </connections>
                 </viewController>

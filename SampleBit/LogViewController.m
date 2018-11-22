@@ -15,11 +15,29 @@
 
 @implementation LogViewController
 {
-        __weak IBOutlet UITextView *logView;
+    
+    __weak IBOutlet UILabel *LogViewTitleTop;
+    __weak IBOutlet UITextView *logView;
 }
 
 -(void)viewWillAppear:(BOOL)animated
 {
     logView.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"OutputLog"];
+    
+    BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"DarkModeSwitch"];
+    if([[NSUserDefaults standardUserDefaults] objectForKey:@"DarkModeSwitch"] == nil ||  switchState == false) {
+        // Off
+        self.view.backgroundColor = [UIColor whiteColor];
+        logView.backgroundColor = [UIColor whiteColor];
+        logView.textColor = [UIColor blackColor];
+        LogViewTitleTop.textColor = [UIColor blackColor];
+        
+        
+    }else{
+        logView.backgroundColor = [UIColor blackColor];
+        self.view.backgroundColor = [UIColor blackColor];
+        logView.textColor = [UIColor whiteColor];
+        LogViewTitleTop.textColor = [UIColor whiteColor];
+    }
 }
 @end
