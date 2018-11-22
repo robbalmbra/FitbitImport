@@ -1472,7 +1472,6 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     }
     
     // Others may be supported - add above in future
-    
     if(distance == 0){
         // Create metadata and workout
         NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
@@ -1581,12 +1580,12 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
 
         if([self ArrayContains:[entry objectForKey:@"startTime"] routeArray:workoutArray]){
-            NSLog(@"    Skipping workout `%@` - Already inserted into healthkit.", activityName);
+            [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already inserted into healthkit.")];
             continue;
         }
         
         // Print activity type
-        NSLog(@"    Parsing activity workout `%@`.", activityName);
+        [self logText:AS(AS(@"    Parsing activity workout `", activityName),@"`.")];
         
         // Add workout
         [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
@@ -1772,15 +1771,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 [self->fitbitAuthHandler login:self];
                 return;
             }
-            
-            if(error == nil){
-                if(self->isDarkMode == 1){
-                    self->resultView.textColor = [UIColor whiteColor];
-                }else{
-                    self->resultView.textColor = [UIColor blackColor];
-                }
-                return;
-            }
+
             // Leave
             dispatch_group_leave(group);
         }];
@@ -1805,6 +1796,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             [self getFitbitURL];
         }else{
             self->resultView.textColor = [UIColor redColor];
+            [self logText:@"Too many requests, try again later..."];
             self->resultView.text = @"Too many requests, try again later...";
             self->running = 0;
         }
@@ -1858,7 +1850,8 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 }
                 @catch (NSException *exception){
                     // Catch if failed
-                    NSLog(@"Error - Failed to find method `%@`. %@",methodName, exception);
+                    NSString * methodError = AS(AS(@"Error - Failed to find method `",methodName),@"`.");
+                    [self logText:methodError];
                 }
             }
             // Leave group
@@ -1887,6 +1880,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 self->apiNoRequests = 1;
                 self->running = 0;
                 self->resultView.textColor = [UIColor redColor];
+                [self logText:@"Too many requests, try again later..."];
                 self->resultView.text = @"Too many requests, try again later...";
             }else{
                 if(self->isDarkMode == 1){
@@ -1907,6 +1901,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
         if(self->apiNoRequests == 0){
             self->running = 0;
+            [self logText:@"Sync Complete"];
             self->resultView.text = @"Sync Complete";
         }
     });
@@ -1935,13 +1930,13 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     }else{
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         [defaults setValue:@"" forKey:@"OutputLog"];
-        NSLog(@"Not Running");
         self->running = 1;
     }
     
     // Check if internet available
     BOOL isNetworkAvailable = [self checkNetConnection];
     if (!isNetworkAvailable) {
+        [self logText:@"Please check your internet connection"];
         [self showAlert:@"Please check your internet connection"];
         return;
     }
@@ -1957,6 +1952,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
     if(self->apiNoRequests == 1){
         self->resultView.textColor = [UIColor redColor];
+        [self logText:@"Too many requests, try again later..."];
         self->resultView.text = @"Too many requests, try again later...";
         self->running = 0;
         return;
@@ -1999,7 +1995,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
         if(error){
-            //NSLog(@"%@", error);
+            [self logText:error];
         }else{
             NSInteger errorCount = 0;
 
@@ -2100,6 +2096,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
+                    [self logText:@"Please go to the Apple Health app, and give access to all the types."];
                     self->resultView.text = @"Please go to the Apple Health app, and give access to all the types.";
                     self->resultView.textColor = [UIColor redColor];
                     self->isRed = 1;
@@ -2144,6 +2141,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     NSString *token = [FitbitAuthHandler getToken];
     if (token != nil){
         [fitbitAuthHandler  revokeAccessToken:token];
+        [self logText:@"Please press login to authorize"];
         resultView.text = @"Please press login to authorize";
     }
 }
