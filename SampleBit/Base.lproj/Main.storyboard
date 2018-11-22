@@ -8,7 +8,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Settings-->
+        <!--Download-->
         <scene sceneID="qWS-Pg-Omg">
             <objects>
                 <viewController id="fOL-0g-eXq" customClass="ViewController" sceneMemberID="viewController">
@@ -64,7 +64,7 @@
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
-                    <tabBarItem key="tabBarItem" title="Settings" systemItem="recents" id="JFZ-y9-w15"/>
+                    <tabBarItem key="tabBarItem" title="Download" image="download" selectedImage="download" id="JFZ-y9-w15"/>
                     <connections>
                         <outlet property="resultView" destination="EVE-Sr-5h8" id="23V-ye-LvR"/>
                     </connections>
@@ -77,7 +77,7 @@
         <scene sceneID="Jsp-8n-9eg">
             <objects>
                 <tabBarController id="var-8B-42H" sceneMemberID="viewController">
-                    <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="eli-2u-hXI">
+                    <tabBar key="tabBar" opaque="NO" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="eli-2u-hXI">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="49"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -91,7 +91,7 @@
             </objects>
             <point key="canvasLocation" x="-1956" y="-469"/>
         </scene>
-        <!--Settings View Controller-->
+        <!--Settings-->
         <scene sceneID="xda-Nu-4p4">
             <objects>
                 <tableViewController id="YNg-mf-tmN" customClass="SettingsViewController" sceneMemberID="viewController">
@@ -436,7 +436,9 @@
                             <outlet property="delegate" destination="YNg-mf-tmN" id="4yy-IP-aVd"/>
                         </connections>
                     </tableView>
-                    <tabBarItem key="tabBarItem" systemItem="more" id="ZLh-Ix-XeV"/>
+                    <tabBarItem key="tabBarItem" title="Settings" image="settings" selectedImage="settings" id="ZLh-Ix-XeV">
+                        <color key="badgeColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                    </tabBarItem>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="BackgroundSwitch" destination="Feh-Ow-g5d" id="0WD-Qz-rCh"/>
@@ -484,6 +486,8 @@
         </scene>
     </scenes>
     <resources>
+        <image name="download" width="30" height="30"/>
         <image name="heart" width="750" height="750"/>
+        <image name="settings" width="30" height="30"/>
     </resources>
 </document>

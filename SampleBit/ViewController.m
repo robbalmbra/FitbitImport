@@ -41,6 +41,7 @@
     __block NSInteger nearestHour;
     __block NSString * distance;
     __block NSMutableArray * workoutArray;
+    __block NSMutableArray * sleepArray;
     __block NSInteger running;
     
 }
@@ -269,32 +270,10 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     }
 }
 
-- (void)hkQueryExecute:(NSDate *) startDate type:(HKSampleType *)type endDate:(NSDate *) endDate completion:(QueryCompletetionBlock)completionBlock{
-
-    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
-
-    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type predicate:predicate limit:0 sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
-        if (!results) {
-            NSLog(@"An error occured fetching the user's sleep duration. In your app, try to handle this gracefully. The error was: %@.", error);
-            completionBlock(0, error);
-            abort();
-        }
-        
-        // Retrieve count
-        NSInteger totalCount = [results count];
-        
-        // Return count
-        completionBlock(totalCount, error);
-    }];
-    
-    // Run query
-    [self->hkstore executeQuery:query];
-}
-
 // Generate URLS for dispatch group
 -(NSMutableArray *)generateURLS{
-    // url, entity name
-    NSMutableArray *array = [[NSMutableArray alloc] init];
+
+    __block NSMutableArray *array = [[NSMutableArray alloc] init];
 
     NSString *startDate = [self calcDate:3];
     NSString *endDate = [self dateNow];
@@ -303,111 +282,92 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     
     // How many days to process (today - Days);
     NSInteger Days = 3;
-    int i = 0;
+        
+    //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
+    if(self->stepsSwitch){
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/1d/15min.json",dateNow];
+            entity = [NSString stringWithFormat:@"steps"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+    }
+
+    ////////////////////////////////////////////// Get floor data //////////////////////////////////////////////////
+    if(self->floorsSwitch){
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/1d/15min.json",dateNow];
+            entity = [NSString stringWithFormat:@"floors"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+    }
+
+    ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
+    if(self->distanceSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T00:00:00&sort=desc&limit=20&offset=0",endDate];
+        entity = [NSString stringWithFormat:@"workout"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+
+    ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
+    if(self->heartRateSwitch){
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",dateNow];
+            entity = [NSString stringWithFormat:@"heart rate"];
+            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+    }
+
+    //////////////////////////////////////////////// Water Consumed ///////////////////////////////////////////////
+    if(self->waterSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"water"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
     
-    dispatch_group_t group = dispatch_group_create();
-    dispatch_group_async(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        
-        //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
-            if(self->stepsSwitch){
-            for(int i=0; i<Days; i++){
-                NSString *dateNow = [self calcDate:i];
-                url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/1d/15min.json",dateNow];
-                entity = [NSString stringWithFormat:@"steps"];
-                [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-            }
-        }
-
-        ////////////////////////////////////////////// Get floor data //////////////////////////////////////////////////
-            if(self->floorsSwitch){
-            for(int i=0; i<Days; i++){
-                NSString *dateNow = [self calcDate:i];
-                url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/1d/15min.json",dateNow];
-                entity = [NSString stringWithFormat:@"floors"];
-                [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-            }
-        }
-
-        ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
-            if(self->distanceSwitch){
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T00:00:00&sort=desc&limit=20&offset=0",endDate];
-            entity = [NSString stringWithFormat:@"workout"];
+    ////////////////////////////////////////////////// Energy /////////////////////////////////////////////////////
+    if(self->activeEnergy){
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/calories/date/%@/1d/15min.json",dateNow];
+            entity = [NSString stringWithFormat:@"calories"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
+    }
 
-        ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
-        //Ten day span
-            if(self->heartRateSwitch){
-            
-            for(int i=0; i<Days; i++){
-                NSString *dateNow = [self calcDate:i];
-                url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",dateNow];
-                entity = [NSString stringWithFormat:@"heart rate"];
-                [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-            }
-        }
-
-        //////////////////////////////////////////////// Water Consumed ///////////////////////////////////////////////
-            if(self->waterSwitch){
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
-            entity = [NSString stringWithFormat:@"water"];
+    ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
+    if(self->nutrients){
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
+            entity = [NSString stringWithFormat:@"nutrients"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
-        
-        ////////////////////////////////////////////////// Energy /////////////////////////////////////////////////////
-            if(self->activeEnergy){
-            for(int i=0; i<Days; i++){
-                NSString *dateNow = [self calcDate:i];
-                url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/calories/date/%@/1d/15min.json",dateNow];
-                entity = [NSString stringWithFormat:@"calories"];
-                [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-            }
-        }
-
-        ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
-            if(self->nutrients){
-            for(int i=0; i<Days; i++){
-                NSString *dateNow = [self calcDate:i];
-                url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
-                entity = [NSString stringWithFormat:@"nutrients"];
-                [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-            }
-        }
-        
-        ///////////////////////////////////////////////////// Weight ///////////////////////////////////////////////////
-            if(self->weightSwitch){
-            
-            //Weight
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/weight/date/%@/%@.json",startDate, endDate];
-            entity = [NSString stringWithFormat:@"weight"];
-            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-            
-            //BMI
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/bmi/date/%@/%@.json",startDate, endDate];
-            entity = [NSString stringWithFormat:@"bmi"];
-            [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-        }
-
-        ///////////////////////////////////////////////////// Sleep //////////////////////////////////////////////////////
-        if(self->sleepSwitch){
-            // Test if data exists, if all exists skip
-            HKSampleType *type = [HKSampleType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
-            
-            // Query
-            [self hkQueryExecute:[self str2date:startDate] type:type endDate:[self str2date:endDate] completion:^(NSInteger count, NSError *error) {
-                if(count != Days){
-                    url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
-                    entity = [NSString stringWithFormat:@"sleep"];
-                    [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-                }else{
-                    NSLog(@"Skipping Sleep - Already inserted into healthkit.");
-                }
-            }];
-        }
-    });
+    }
     
-    // Wait for above to complete before proceeding
-    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+    ///////////////////////////////////////////////////// Weight ///////////////////////////////////////////////////
+    if(self->weightSwitch){
+        
+        //Weight
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/weight/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"weight"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        
+        //BMI
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/bmi/date/%@/%@.json",startDate, endDate];
+        entity = [NSString stringWithFormat:@"bmi"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+
+    ///////////////////////////////////////////////////// Sleep //////////////////////////////////////////////////////
+    if(self->sleepSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
+        entity = [NSString stringWithFormat:@"sleep"];
+        [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+
     return array;
 }
 
@@ -1134,6 +1094,14 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     return date;
 }
 
+- (NSString *)convertDateToString:(NSDate * ) dateTime{
+    NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+    [dateFormat setDateFormat:@"yyyy-MM-dd"];
+    [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
+    NSString *date = [dateFormat stringFromDate:dateTime];
+    return date;
+}
+
 // Get json content from web server
 - (NSArray *) GetHistoricData:(NSURL *)url{
     NSError *error = nil;
@@ -1844,7 +1812,6 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             
             
             // Update interface with message, passed from entity
-            printf("%d",self->backgroundModeOn);
             if(self->backgroundModeOn == 0){
                 self->resultView.text = [[@"Importing " stringByAppendingString:type] stringByAppendingString:@" data..."];
             }
