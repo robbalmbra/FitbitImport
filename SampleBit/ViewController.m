@@ -50,6 +50,7 @@
     __block NSTimer * timer;
     __block double count;
     __block double progress;
+    __block BOOL launchedFitAuth;
     
 }
 
@@ -75,7 +76,8 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                                                object:nil];
     
     self->nearestHour = -1;
-
+    self->launchedFitAuth = 0;
+    
     //Define array if ns array is not set
     self->workoutArray = [NSMutableArray new];
 }
@@ -2001,9 +2003,11 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 NSInteger nowEpochSeconds = [now timeIntervalSince1970];
                 
                 NSInteger new_number = nowEpochSeconds - (nowEpochSeconds % 3600);
-                self->nearestHour = (new_number + 3600) + 15;
+                NSInteger nearestHour = (new_number + 3600) + 15;
 
-                
+                // Save nearest hour
+                [[NSUserDefaults standardUserDefaults] setInteger:nearestHour forKey:@"nowEpochSeconds"];
+
                 self->running = 0;
                 self->resultView.textColor = [UIColor redColor];
 
@@ -2011,6 +2015,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                     [self logText:@"Too many requests, try again later..."];
                     self->resultView.textColor = [UIColor redColor];
                     self->resultView.text = @"Too many requests, try again later...";
+                    self->running = 0;
                 }
                 self->apiNoRequests = 1;
             }else{
@@ -2062,7 +2067,6 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     if(self->running == 1){
         return;
     }else{
-        self->ProgressBar.hidden = false;
         self->progress = 0;
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         [defaults setValue:@"" forKey:@"OutputLog"];
@@ -2081,20 +2085,33 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
     NSDate *now = [NSDate date];
     NSInteger nowEpochSeconds = [now timeIntervalSince1970];
-
+    NSInteger nearestHour = [[NSUserDefaults standardUserDefaults] integerForKey:@"nowEpochSeconds"];
+    
+    self->nearestHour = nearestHour;
     if(self->nearestHour != -1 && nowEpochSeconds > self->nearestHour)
     {
         self->apiNoRequests = 0;
         self->nearestHour = -1;
+        self->ProgressBar.hidden = true;
+    }else{
+        self->ProgressBar.hidden = true;
+        [self logText:@"Too many requests, try again later..."];
+        self->resultView.text = @"Too many requests, try again later...";
+        self->resultView.textColor = [UIColor redColor];
+        self->running = 0;
+        return;
     }
 
     if(self->apiNoRequests == 1){
+        self->ProgressBar.hidden = true;
         [self logText:@"Too many requests, try again later..."];
         self->resultView.text = @"Too many requests, try again later...";
         self->resultView.textColor = [UIColor redColor];
         self->running = 0;
         return;
     }else{
+        self->ProgressBar.hidden = false;
+        self->resultView.text = @"";
         if(self->isDarkMode == 1){
             self->resultView.textColor = [UIColor whiteColor];
         }else{
@@ -2250,7 +2267,14 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                         self->resultView.textColor = [UIColor blackColor];
                     }
                 });
-                [self->fitbitAuthHandler login:self];
+                
+                // Only run safari fitbit auth once
+                if(self->launchedFitAuth == 0){
+                    [self->fitbitAuthHandler login:self];
+                    self->launchedFitAuth = 1;
+                }else{
+                    [self notificationDidReceived];
+                }
             }
         }
     }];
