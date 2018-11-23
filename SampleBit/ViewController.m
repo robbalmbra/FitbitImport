@@ -332,7 +332,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
     ////////////////////////////////////////////// Get distance data ///////////////////////////////////////////////
     if(self->distanceSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T00:00:00&sort=desc&limit=20&offset=0",endDate];
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T23:59:59&sort=desc&limit=20&offset=0",endDate];
         entity = [NSString stringWithFormat:@"workout"];
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
@@ -1425,115 +1425,154 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 }
 
 // Get workout
-- (HKWorkout *) GetWorkout:(NSString *)activityName startDate:(NSDate *)StartDate endDate:(NSDate *)EndDate rawData:(NSString *) RawDateTime calories:(HKQuantity *) calories distance:(double) distance speed:(NSString *) speed pace:(NSString *) pace steps:(NSString *) steps elevation:(NSString *) elevation
+- (HKWorkout *) GetWorkout:(NSDictionary *)entry
 {
     __block NSUInteger workoutType = 0;
     __block HKWorkout *workout;
-
+    __block NSUInteger workoutTypeIdentifer = 0;
+    
+    NSString * activityName = [entry objectForKey:@"ActivityName"];
+    __block HKQuantity *totalDistance;
+    
     // Select activity type
     if([activityName  isEqual: @"Walk"]){
         workoutType = HKWorkoutActivityTypeWalking;
+        workoutTypeIdentifer = 0;
     }else if([activityName  isEqual: @"Outdoor Bike"]){
         workoutType = HKWorkoutActivityTypeCycling;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqual: @"Run"]){
         workoutType = HKWorkoutActivityTypeRunning;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Hike"]){
         workoutType = HKWorkoutActivityTypeHiking;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Sport"]){
         workoutType = HKWorkoutActivityTypeOther;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Golf"]){
         workoutType = HKWorkoutActivityTypeGolf;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Swim"]){
         workoutType = HKWorkoutActivityTypeSwimming;
+        workoutTypeIdentifer = 1;
     }else if([activityName isEqualToString:@"Tennis"]){
         workoutType = HKWorkoutActivityTypeTennis;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Elliptical"]){
         workoutType = HKWorkoutActivityTypeElliptical;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Kickboxing"]){
         workoutType = HKWorkoutActivityTypeKickboxing;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Pilates"]){
         workoutType = HKWorkoutActivityTypePilates;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Martial Arts"]){
         workoutType = HKWorkoutActivityTypeMartialArts;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Yoga"]){
         workoutType = HKWorkoutActivityTypeYoga;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Interval Workout"]){
+        workoutTypeIdentifer = 0;
         workoutType = HKWorkoutActivityTypeHighIntensityIntervalTraining;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Circuit Training"]){
         workoutType = HKWorkoutActivityTypeCoreTraining;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Stairclimber"]){
         workoutType = HKWorkoutActivityTypeStairClimbing;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Weights"]){
         workoutType = HKWorkoutActivityTypeTraditionalStrengthTraining;
+        workoutTypeIdentifer = 0;
     }else if([activityName isEqualToString:@"Spinning"]){
         workoutType = HKWorkoutActivityTypeBarre;
+        workoutTypeIdentifer = 0;
     }else{
         workoutType = HKWorkoutActivityTypeOther;
+        workoutTypeIdentifer = 0;
     }
-    
-    // Others may be supported - add above in future
-    if(distance == 0){
-        // Create metadata and workout
-        NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
-        if(steps != nil){
-            [MetaOptions setObject:steps forKey:@"Step Count"];
-        }
 
-        if(elevation != nil){
-            double elevationr = [elevation doubleValue];
-            if(elevationr < 0){
-                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationDescended];
-            }else{
-                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationAscended];
-            }
+    // Define extra meta options for workout
+    NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
+
+    // Elevation
+    NSString *elevation = [entry objectForKey:@"elevationGain"];
+    if(elevation != nil){
+        if([elevation doubleValue] < 0){
+            [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationDescended];
+        }else{
+            [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationAscended];
         }
-        
+    }
+
+    // Steps
+    NSString *steps = [entry objectForKey:@"steps"];
+    if(steps != nil){
+        [MetaOptions setObject:steps forKey:@"Step Count"];
+    }
+
+    // Pace
+    NSString *pace = [entry objectForKey:@"pace"];
+    if(pace != nil){
+        [MetaOptions setObject:pace forKey:@"Pace"];
+    }
+
+    // Speed
+    NSString *speed = [entry objectForKey:@"speed"];
+    if(speed != nil){
+        [MetaOptions setObject:speed forKey:HKMetadataKeyAverageSpeed];
+    }
+
+    // Distance
+    double distance = [[entry objectForKey:@"distance"] doubleValue];
+    if([entry objectForKey:@"distance"]  == nil){
+        distance = 0;
+        totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
+    }else{
+        double conv = 0.621371;
+        distance = (distance * conv);
+        totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
+    }
+
+    // Lap Length
+    if([entry objectForKey:@"poolLength"] != nil){
+        double poolLength = [[entry objectForKey:@"poolLength"] doubleValue];
+        HKQuantity * poolLengthTotal = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:poolLength];
+        [MetaOptions setObject:poolLengthTotal forKey:HKMetadataKeyLapLength];
+    }
+
+    // Calories
+    int calories = [[entry objectForKey:@"calories"] intValue];
+    
+    // Create and declare calories type
+    HKQuantity * totalCalories = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
+
+    // Calculata EndDate and StartDate
+    NSString * RawDateTime = [entry objectForKey:@"startTime"];
+    NSDate * StartDate = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
+
+    double duration = [[entry objectForKey:@"duration"] doubleValue];
+    NSDate * EndDate = [StartDate dateByAddingTimeInterval:duration/1000.0];
+
+    if(workoutTypeIdentifer == 0){
+
+        // Create generic workout
         NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
         workout = [HKWorkout workoutWithActivityType:workoutType
                                                        startDate:StartDate
                                                        endDate:EndDate
                                                        duration:0
-                                                       totalEnergyBurned:calories
-                                                       totalDistance:0
+                                                       totalEnergyBurned:totalCalories
+                                                       totalDistance:totalDistance
                                                        device:[self ReturnDeviceInfo]
                                                        metadata:metadata];
+    
     }else{
+        // Create swimming workout
         
-        //Kilometers to miles calculation
-        double conv = 0.621371;
-        double miles = (distance * conv);
-        
-        // Declare distance type
-        HKQuantity *distance2 = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:miles];
-
-        // Declare extra meta
-        NSMutableDictionary *MetaOptions = [[NSMutableDictionary alloc] init];
-        [MetaOptions setObject:speed forKey:HKMetadataKeyAverageSpeed]; //average speed
-        [MetaOptions setObject:pace forKey:@"Pace"];
-        if(steps != nil){
-            [MetaOptions setObject:steps forKey:@"Step Count"];
-        }
-        
-        if(elevation != nil){
-            double elevationr = [elevation doubleValue];
-            if(elevationr < 0){
-                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationDescended];
-            }else{
-                [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationAscended];
-            }
-        }
-        
-        // Create metadata and workout
-        NSMutableDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
-
-        workout = [HKWorkout workoutWithActivityType:workoutType
-                                                      startDate:StartDate
-                                                        endDate:EndDate
-                                                        duration:0
-                                              totalEnergyBurned:calories
-                                                  totalDistance:distance2
-                                                       device:[self ReturnDeviceInfo]
-                                                       metadata:metadata];
     }
     
     // Return workout
@@ -1549,7 +1588,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     HKWorkout *workout;
 
     for(NSDictionary * entry in activities){
-        
+
         NSString * startDateRaw = [entry objectForKey:@"startTime"];
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
@@ -1577,19 +1616,23 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         HKQuantity *energyBurned = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
 
         // Create workout and return workout
-        workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
+        workout = [self GetWorkout:entry];
+        
+        //workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
 
         if([self ArrayContains:[entry objectForKey:@"startTime"] routeArray:workoutArray]){
-            [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already inserted into healthkit.")];
+            [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already installed.")];
             continue;
         }
         
         // Print activity type
-        [self logText:AS(AS(@"    Parsing activity workout `", activityName),@"`.")];
+        [self logText:AS(AS(@"    Parsing workout `", activityName),@"`.")];
         
         // Add workout
         [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
 
+        continue; //debug
+        
         // Insert into healthkit and return response error or success
         [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
@@ -1851,6 +1894,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 @catch (NSException *exception){
                     // Catch if failed
                     NSString * methodError = AS(AS(@"Error - Failed to find method `",methodName),@"`.");
+                    NSLog(@"%@", exception);
                     [self logText:methodError];
                 }
             }
