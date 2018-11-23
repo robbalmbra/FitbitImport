@@ -38,7 +38,7 @@
                                 </connections>
                             </button>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" textAlignment="center" selectable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EVE-Sr-5h8" customClass="resultView">
-                                <rect key="frame" x="0.0" y="522" width="414" height="51"/>
+                                <rect key="frame" x="0.0" y="548" width="414" height="51"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <accessibility key="accessibilityConfiguration">
@@ -61,17 +61,22 @@
                                     <action selector="actionRevokeAccess:" destination="fOL-0g-eXq" eventType="touchUpInside" id="hes-ME-qAh"/>
                                 </connections>
                             </button>
+                            <progressView hidden="YES" opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rWP-tv-KqX">
+                                <rect key="frame" x="20" y="598" width="374" height="2"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
+                            </progressView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
                     <tabBarItem key="tabBarItem" title="Download" image="download" selectedImage="download" id="JFZ-y9-w15"/>
                     <connections>
+                        <outlet property="ProgressBar" destination="rWP-tv-KqX" id="wfb-Zo-S6w"/>
                         <outlet property="resultView" destination="EVE-Sr-5h8" id="23V-ye-LvR"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qg5-bG-69n" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1126" y="-470"/>
+            <point key="canvasLocation" x="-1126.0869565217392" y="-470.38043478260875"/>
         </scene>
         <!--Log-->
         <scene sceneID="csr-Ln-hGC">
@@ -139,6 +144,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="736"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <inset key="separatorInset" minX="15" minY="0.0" maxX="0.0" maxY="0.0"/>
                         <label key="tableHeaderView" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="  Settings" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="zrG-ck-Vs5">
                             <rect key="frame" x="0.0" y="0.0" width="414" height="67"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
@@ -247,8 +253,8 @@
                                             <rect key="frame" x="0.0" y="0.0" width="414" height="43.666666666666664"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Distance Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eER-jA-2Ct">
-                                                    <rect key="frame" x="20" y="11.333333333333336" width="121" height="21"/>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Workout Profile" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="eER-jA-2Ct">
+                                                    <rect key="frame" x="20" y="11.333333333333336" width="118" height="21"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>

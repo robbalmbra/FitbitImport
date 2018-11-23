@@ -19,6 +19,9 @@
 {
     FitbitAuthHandler *fitbitAuthHandler;
     __weak IBOutlet UITextView *resultView;
+    
+    __weak IBOutlet UIProgressView * ProgressBar;
+    
     __block BOOL heartRateSwitch;
     __block BOOL sleepSwitch;
     __block BOOL nutrients;
@@ -43,7 +46,10 @@
     __block NSMutableArray * workoutArray;
     __block NSMutableArray * sleepArray;
     __block NSInteger running;
-    __block BOOL workoutsCompleted;
+    __block int workoutComplete;
+    __block NSTimer * timer;
+    __block double count;
+    __block double progress;
     
 }
 
@@ -51,7 +57,6 @@
 
 typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
-typedef void(^VoidBlock)();
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -69,8 +74,6 @@ typedef void(^VoidBlock)();
                                                  name:UIApplicationDidEnterBackgroundNotification
                                                object:nil];
     
-    
-    self->apiNoRequests = 0;
     self->nearestHour = -1;
 
     //Define array if ns array is not set
@@ -102,11 +105,6 @@ typedef void(^VoidBlock)();
 
 -(void)viewWillAppear:(BOOL)animated
 {
-    
-    if(self->apiNoRequests == 1){
-        resultView.textColor = [UIColor redColor];
-    }
-    
     // Water Switch
     BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"waterSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"waterSwitch"] == nil) {
@@ -274,6 +272,10 @@ typedef void(^VoidBlock)();
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
         self.tabBarController.tabBar.barTintColor = [UIColor blackColor];
     }
+
+    if(self->apiNoRequests == 1){
+        self->resultView.textColor = [UIColor redColor];
+    }
 }
 
 -(void)logText:(NSString *) text {
@@ -401,6 +403,7 @@ typedef void(^VoidBlock)();
         [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
 
+    self->count = 1.0f/([array count] + 1);
     return array;
 }
 
@@ -1441,11 +1444,11 @@ typedef void(^VoidBlock)();
     __block NSUInteger workoutType = 0;
     __block HKWorkout *workout;
     __block NSUInteger workoutTypeIdentifer = 0;
-    
+
     NSString * activityName = [entry objectForKey:@"activityName"];
     __block HKQuantity *totalDistance;
     __block NSString * model;
-    
+
     // Select activity type
     if([activityName  isEqual: @"Walk"]){
         workoutType = HKWorkoutActivityTypeWalking;
@@ -1537,7 +1540,7 @@ typedef void(^VoidBlock)();
     if(speed != nil){
         [MetaOptions setObject:speed forKey:HKMetadataKeyAverageSpeed];
     }
-    
+
     // Distance
     double distance = [[entry objectForKey:@"distance"] doubleValue];
     if([entry objectForKey:@"distance"]  == nil){
@@ -1575,7 +1578,6 @@ typedef void(^VoidBlock)();
     }
 
     //Alter distance to correct measurement - TODO
-    
     if(workoutTypeIdentifer == 0){
         // Create generic workout
         NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
@@ -1609,22 +1611,22 @@ typedef void(^VoidBlock)();
 - (void) ProcessWorkout:( NSDictionary * ) jsonData
 {
     __block dispatch_group_t group2 = dispatch_group_create();
-    
+
     NSArray * activities = [jsonData objectForKey:@"activities"];
     __block double distance;
     HKWorkout *workout;
     double averageHeartRate;
-    
+
     typeof(self) __weak weakSelf = self;
-    
+
     for(NSDictionary * entry in activities){
 
         dispatch_group_enter(group2);
-        
+
         NSString * startDateRaw = [entry objectForKey:@"startTime"];
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
-        
+
         distance = [[entry objectForKey:@"distance"] doubleValue];
 
         // Calculate end date/time
@@ -1633,7 +1635,7 @@ typedef void(^VoidBlock)();
 
         //Average heart rate
         averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
-        
+
         // TxcFile
         NSString * httplink = [entry objectForKey:@"tcxLink"];
 
@@ -1644,10 +1646,10 @@ typedef void(^VoidBlock)();
             [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already installed.")];
             continue;
         }
-        
+
         // Print activity type
         [self logText:AS(AS(@"    Parsing workout `", activityName),@"`.")];
-        
+
         // Add workout
         [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
 
@@ -1749,12 +1751,11 @@ typedef void(^VoidBlock)();
                         
                         // Create sample
                         HKQuantitySample *heartRateAverageForIntervalSample = [HKQuantitySample quantitySampleWithType:heartRateAverageType
-                                                                                                              quantity:heartRateAverageForInterval
-                                                                                                             startDate:startTime
-                                                                                                               endDate:endTime];
+                                                            quantity:heartRateAverageForInterval
+                                                            startDate:startTime
+                                                            endDate:endTime];
                         
                         [averageHeartRateArray addObject:heartRateAverageForIntervalSample];
-                        
                         [self->hkstore addSamples:averageHeartRateArray toWorkout:workout completion:^(BOOL success, NSError * _Nullable error) {
                             dispatch_group_leave(group2);
                         }];
@@ -1767,8 +1768,7 @@ typedef void(^VoidBlock)();
     }
     
     dispatch_group_notify(group2, dispatch_get_main_queue(), ^{
-        //weakSelf->workoutsCompleted = 1;
-        NSLog(@"finished!");
+        self->workoutComplete = 1;
     });
     
 }
@@ -1887,29 +1887,49 @@ typedef void(^VoidBlock)();
 
             self->running = 1;
             
-            if(self->isDarkMode == 1){
-                self->resultView.textColor = [UIColor whiteColor];
+            if(self->apiNoRequests == 1){
+                self->resultView.textColor = [UIColor redColor];
             }else{
-                self->resultView.textColor = [UIColor blackColor];
+                if(self->isDarkMode == 1){
+                    self->resultView.textColor = [UIColor whiteColor];
+                }else{
+                    self->resultView.textColor = [UIColor blackColor];
+                }
             }
             
             // Retrieve over
             [self getFitbitURL];
         }else{
-            self->resultView.textColor = [UIColor redColor];
             [self logText:@"Too many requests, try again later..."];
             self->resultView.text = @"Too many requests, try again later...";
+            self->resultView.textColor = [UIColor redColor];
             self->running = 0;
         }
     });
 }
 
+- (void)timerCallback:(NSTimer*)theTimer
+{
+    if(self->workoutComplete == 1){
+        
+        self->progress+=self->count;
+        self->ProgressBar.progress = (float)self->progress;
+        
+        [self logText:@"Sync Complete"];
+        [theTimer invalidate];
+        
+        self->resultView.text = @"Sync Complete";
+        self->running = 0;
+    }
+}
+
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
 
-    __block int quitBlock = 0;
+    // Create dispatch block
     dispatch_group_t group = dispatch_group_create();
-
+    
+    // Iterate over URLS
     NSMutableArray *URLS = [self generateURLS];
     for (NSMutableArray *entity in URLS){
         
@@ -1932,6 +1952,9 @@ typedef void(^VoidBlock)();
 
             // Update interface with message, passed from entity
             if(self->backgroundModeOn == 0){
+                
+                self->progress+=self->count;
+                self->ProgressBar.progress = (float)self->progress;
                 self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
             }
                 
@@ -1986,6 +2009,7 @@ typedef void(^VoidBlock)();
 
                 if(self->apiNoRequests == 0){
                     [self logText:@"Too many requests, try again later..."];
+                    self->resultView.textColor = [UIColor redColor];
                     self->resultView.text = @"Too many requests, try again later...";
                 }
                 self->apiNoRequests = 1;
@@ -2007,9 +2031,12 @@ typedef void(^VoidBlock)();
 
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
         if(self->apiNoRequests == 0){
-            self->running = 0;
-            [self logText:@"Sync Complete"];
-            self->resultView.text = @"Sync Complete";
+
+            //Loop
+            self->timer = [NSTimer timerWithTimeInterval:2.0 target:self selector:@selector(timerCallback:) userInfo:nil repeats:YES];
+            
+            NSRunLoop *runloop = [NSRunLoop currentRunLoop];
+            [runloop addTimer:self->timer forMode:NSDefaultRunLoopMode];
         }
     });
 }
@@ -2035,6 +2062,8 @@ typedef void(^VoidBlock)();
     if(self->running == 1){
         return;
     }else{
+        self->ProgressBar.hidden = false;
+        self->progress = 0;
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         [defaults setValue:@"" forKey:@"OutputLog"];
         
@@ -2060,9 +2089,9 @@ typedef void(^VoidBlock)();
     }
 
     if(self->apiNoRequests == 1){
-        self->resultView.textColor = [UIColor redColor];
         [self logText:@"Too many requests, try again later..."];
         self->resultView.text = @"Too many requests, try again later...";
+        self->resultView.textColor = [UIColor redColor];
         self->running = 0;
         return;
     }else{
