@@ -43,6 +43,7 @@
     __block NSMutableArray * workoutArray;
     __block NSMutableArray * sleepArray;
     __block NSInteger running;
+    __block BOOL workoutsCompleted;
     
 }
 
@@ -50,6 +51,7 @@
 
 typedef void (^ButtonCompletionBlock)(NSDictionary * jsonData, NSError * error);
 typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
+typedef void(^VoidBlock)();
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -499,10 +501,13 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 }
 
 // Return device information
-- (HKDevice *) ReturnDeviceInfo
+- (HKDevice *) ReturnDeviceInfo:(NSString *) model
 {
-
-    HKDevice *device = [[HKDevice alloc] initWithName:@"Fitbit" manufacturer:@"Fitbit" model:@"-" hardwareVersion:@"-" firmwareVersion:@"2.1" softwareVersion:@"1.1" localIdentifier:@"1.1" UDIDeviceIdentifier:@"a5b2e8f9d2a983e3a9d3e21"];
+    if(model == nil){
+        model = @"-";
+    }
+    
+    HKDevice *device = [[HKDevice alloc] initWithName:@"Fitbit" manufacturer:@"Fitbit" model:model hardwareVersion:@"-" firmwareVersion:@"2.1" softwareVersion:@"1.1" localIdentifier:@"1.1" UDIDeviceIdentifier:@"a5b2e8f9d2a983e3a9d3e21"];
     
     return device;
 }
@@ -565,7 +570,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Bmi" date:DateStitch extra:nil];
-        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:weightSample];
     }
     
@@ -610,7 +615,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Weight" date:DateStitch extra:nil];
-        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:weightSample];
     }
 
@@ -674,7 +679,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Update carbs to mysql
         [self UpdateSQL:[summary objectForKey:@"carbs"] type:@"Carbs" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Carbs" date:DateStitch extra:nil];
-        HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:carbsSample];
     }
 
@@ -684,7 +689,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Update fat to mysql
         [self UpdateSQL:[summary objectForKey:@"fat"] type:@"Fat" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Fat" date:DateStitch extra:nil];
-        HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:fatSample];
     }
 
@@ -694,7 +699,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Update fiber to mysql
         [self UpdateSQL:[summary objectForKey:@"fiber"] type:@"Fiber" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Fiber" date:DateStitch extra:nil];
-        HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:fiberSample];
     }
 
@@ -704,7 +709,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Update protein to mysql
         [self UpdateSQL:[summary objectForKey:@"protein"] type:@"Protein" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Protein" date:DateStitch extra:nil];
-        HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:proteinSample];
     }
 
@@ -714,7 +719,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Update sodium to mysql
         [self UpdateSQL:[summary objectForKey:@"sodium"] type:@"Sodium" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
         metadata = [self ReturnMetadata:@"Sodium" date:DateStitch extra:nil];
-        HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
 
@@ -764,7 +769,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 
         // Create sample
         HKQuantity *quantity = [HKQuantity quantityWithUnit:energy doubleValue:value];
-        HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
         // Add sample to array
         [energyArray addObject:calSample];
@@ -810,7 +815,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
           HKMetadataKeySyncVersion: nowEpochSeconds};
 
         // Create sample
-        HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 device:[self ReturnDeviceInfo] metadata:metadata];
+        HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
         if(value != 0){
             [self UpdateSQL:[entry objectForKey:@"value"] type:@"Water" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
@@ -888,8 +893,10 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Create sample
         HKQuantitySample * hrSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime];
         
-        // Add sample to array
-        [bpmArray addObject:hrSample];
+        if(value != 0){
+            // Add sample to array
+            [bpmArray addObject:hrSample];
+        }
     }
 
     if([bpmArray count] > 0){
@@ -1187,7 +1194,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 NSDate * endtime = [date dateByAddingTimeInterval:secondsInAnHour];
 
                 // Create sample
-                HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:endtime device:[self ReturnDeviceInfo] metadata:metadata];
+                HKQuantitySample * stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:date endDate:endtime device:[self ReturnDeviceInfo:nil] metadata:metadata];
                 
                 // Insert into healthkit and return response error or success
                 [hkstore saveObject:stepSample withCompletion:^(BOOL success, NSError *error){
@@ -1221,7 +1228,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             NSMutableDictionary * metadata = [self ReturnMetadata:@"Asleep" date:[entry objectForKey:@"datetime"] extra:nil];
 
             // Create sample
-            HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo] metadata:metadata];
+            HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
             // Add to sample array
             [sleepSamples addObject:sleepSample];
@@ -1264,7 +1271,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             NSMutableDictionary * metadata = [self ReturnMetadata:@"Floors" date:dates extra:nil];
 
             // Create Sample with step value
-            HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
+            HKQuantitySample * floorSample = [HKQuantitySample quantitySampleWithType:floorType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
             // Add to sample array
             [floorSamples addObject:floorSample];
@@ -1307,7 +1314,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             NSMutableDictionary * metadata = [self ReturnMetadata:@"Weight" date:dates extra:nil];
             
             // Create Sample with step value
-            HKQuantitySample * weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
+            HKQuantitySample * weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo:nil] metadata:metadata];
             
             // Add to sample array
             [weightSamples addObject:weightSample];
@@ -1351,7 +1358,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             NSMutableDictionary * metadata = [self ReturnMetadata:@"Bmi" date:dates extra:nil];
 
             // Create Sample with step value
-            HKQuantitySample * bmiSample = [HKQuantitySample quantitySampleWithType:bmiType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo] metadata:metadata];
+            HKQuantitySample * bmiSample = [HKQuantitySample quantitySampleWithType:bmiType quantity:quantity startDate:date endDate:date device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
             // Add to sample array
             [bmiSamples addObject:bmiSample];
@@ -1406,7 +1413,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         [self UpdateSQL:@"0" type:@"Sleep" date1:[self convertDateTimetoString:startDate] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertDateTimetoString:endDate]];
         
         // Get start and end of sleep
-        HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo] metadata:metadata];
+        HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
         // Insert into healthkit and return response error or success
         [hkstore saveObject:sleepSample withCompletion:^(BOOL success, NSError *error){
@@ -1435,8 +1442,9 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     __block HKWorkout *workout;
     __block NSUInteger workoutTypeIdentifer = 0;
     
-    NSString * activityName = [entry objectForKey:@"ActivityName"];
+    NSString * activityName = [entry objectForKey:@"activityName"];
     __block HKQuantity *totalDistance;
+    __block NSString * model;
     
     // Select activity type
     if([activityName  isEqual: @"Walk"]){
@@ -1529,16 +1537,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     if(speed != nil){
         [MetaOptions setObject:speed forKey:HKMetadataKeyAverageSpeed];
     }
-
+    
     // Distance
     double distance = [[entry objectForKey:@"distance"] doubleValue];
     if([entry objectForKey:@"distance"]  == nil){
         distance = 0;
-        totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
+        totalDistance = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:distance];
     }else{
         double conv = 0.621371;
         distance = (distance * conv);
-        totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
+        totalDistance = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:distance];
     }
 
     // Lap Length
@@ -1548,10 +1556,8 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         [MetaOptions setObject:poolLengthTotal forKey:HKMetadataKeyLapLength];
     }
 
-    // Calories
-    int calories = [[entry objectForKey:@"calories"] intValue];
-    
     // Create and declare calories type
+    int calories = [[entry objectForKey:@"calories"] intValue];
     HKQuantity * totalCalories = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
 
     // Calculata EndDate and StartDate
@@ -1561,8 +1567,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     double duration = [[entry objectForKey:@"duration"] doubleValue];
     NSDate * EndDate = [StartDate dateByAddingTimeInterval:duration/1000.0];
 
-    if(workoutTypeIdentifer == 0){
+    // Model Name
+    if([entry objectForKey:@"source"] != nil){
+        model = [[entry objectForKey:@"source"] objectForKey:@"name"];
+    }else{
+        model = nil;
+    }
 
+    //Alter distance to correct measurement - TODO
+    
+    if(workoutTypeIdentifer == 0){
         // Create generic workout
         NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
         workout = [HKWorkout workoutWithActivityType:workoutType
@@ -1571,10 +1585,9 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                                                        duration:0
                                                        totalEnergyBurned:totalCalories
                                                        totalDistance:totalDistance
-                                                       device:[self ReturnDeviceInfo]
+                                                       device:[self ReturnDeviceInfo:model]
                                                        metadata:metadata];
     }else{
-
         // Create swimming workout
         NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
         workout = [HKWorkout workoutWithActivityType:workoutType
@@ -1584,7 +1597,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                                                         totalEnergyBurned:totalCalories
                                                         totalDistance:totalDistance
                                                         totalSwimmingStrokeCount:0
-                                                        device:[self ReturnDeviceInfo]
+                                                        device:[self ReturnDeviceInfo:model]
                                                         metadata:metadata];
     }
     
@@ -1595,45 +1608,39 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 // Distance
 - (void) ProcessWorkout:( NSDictionary * ) jsonData
 {
+    __block dispatch_group_t group2 = dispatch_group_create();
+    
     NSArray * activities = [jsonData objectForKey:@"activities"];
     __block double distance;
-    
     HKWorkout *workout;
-
+    double averageHeartRate;
+    
+    typeof(self) __weak weakSelf = self;
+    
     for(NSDictionary * entry in activities){
 
+        dispatch_group_enter(group2);
+        
         NSString * startDateRaw = [entry objectForKey:@"startTime"];
         NSDate * startTime = [self convertDateTimeZ:[entry objectForKey:@"startTime"]];
         NSString * activityName = [entry objectForKey:@"activityName"];
-        NSString * stepCount = [entry objectForKey:@"steps"];
         
         distance = [[entry objectForKey:@"distance"] doubleValue];
-        
-        double calories = [[entry objectForKey:@"calories"] doubleValue];
-        double averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
-        NSString * elevation = [entry objectForKey:@"elevationGain"];
-        double speedr = [[entry objectForKey:@"speed"] doubleValue];
-        double pacer = [[entry objectForKey:@"pace"] doubleValue];
-        
-        NSString * speed = [NSString stringWithFormat:@"%.2f", speedr];
-        NSString * pace = [NSString stringWithFormat:@"%.2f", pacer];
 
         // Calculate end date/time
-        int duration = [[entry objectForKey:@"duration"] intValue];
+        double duration = [[entry objectForKey:@"duration"] doubleValue];
         NSDate * endTime = [startTime dateByAddingTimeInterval:duration/1000.0];
 
+        //Average heart rate
+        averageHeartRate = [[entry objectForKey:@"averageHeartRate"] doubleValue];
+        
         // TxcFile
         NSString * httplink = [entry objectForKey:@"tcxLink"];
 
-        // Create and declare calories type
-        HKQuantity *energyBurned = [HKQuantity quantityWithUnit:[HKUnit smallCalorieUnit] doubleValue:calories];
-
         // Create workout and return workout
         workout = [self GetWorkout:entry];
-        
-        //workout = [self GetWorkout:activityName startDate:startTime endDate:endTime rawData:[entry objectForKey:@"startTime"] calories:energyBurned distance:distance speed:speed pace:pace steps:stepCount elevation:elevation];
 
-        if([self ArrayContains:[entry objectForKey:@"startTime"] routeArray:workoutArray]){
+        if([self ArrayContains:[entry objectForKey:@"startTime"] routeArray:self->workoutArray]){
             [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already installed.")];
             continue;
         }
@@ -1644,88 +1651,126 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Add workout
         [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
 
-        continue; //debug
-        
         // Insert into healthkit and return response error or success
-        [hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
+        [self->hkstore saveObject:workout withCompletion:^(BOOL success, NSError *error){
             if(success) {
                 // Check if distance exists to see if gps is available
-                if([entry objectForKey:@"distance"] != nil && [entry objectForKey:@"tcxLink"] != nil){
+                if([entry objectForKey:@"tcxLink"] != nil && [entry objectForKey:@"distance"] != nil){
                     
                     dispatch_group_t group = dispatch_group_create();
+                    //NSLog(@"%@", httplink);
                     [self ProcessTCX:httplink group:group completion:^(NSDictionary * xml, NSError * error) {
-                    
+                        
+                        // Define heartrate type
+                        HKQuantityType *heartType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
+                        
+                        // Defined heartrate unit
+                        HKUnit *bpm = [HKUnit unitFromString:@"count/min"];
+                        
                         // Get Latitude/Longitude array
                         NSArray * points = [[[[[[xml objectForKey:@"TrainingCenterDatabase"] objectForKey:@"Activities"] objectForKey:@"Activity"] objectForKey:@"Lap"] objectForKey:@"Track"] objectForKey:@"Trackpoint"];
 
-                        // Define route location array
-                        NSMutableArray *routeArray = [NSMutableArray array];
-
-                        [routeArray removeAllObjects];
-                        
-                        // Retrieve lat/long on each point
-                        for(NSDictionary * latlong in points){
-                            NSDictionary * container = [latlong objectForKey:@"Position"];
-                            double latitude = [[[container objectForKey:@"LatitudeDegrees"] objectForKey:@"text"] doubleValue];
-                            double longitude = [[[container objectForKey:@"LongitudeDegrees"] objectForKey:@"text"] doubleValue];
-                            double altitude = [[[latlong objectForKey:@"AltitudeMeters"] objectForKey:@"text"] doubleValue];
-
-                            // Timestamp
-                            NSDate * timestamp = [self convertDateTimeZ:[[latlong objectForKey:@"Time"] objectForKey:@"text"]];
-
-                            CLLocation *test = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:altitude horizontalAccuracy:-1 verticalAccuracy:-1 timestamp:timestamp];
-
-                            // Add to route array
-                            [routeArray addObject:test];
-                        }
-                        
-                        if([routeArray count] > 0){
+                        // Safety net, some activities may have distance set but doesnt have gps and/or within the file
+                        if([points count] > 0){
                             
-                            // Declare route builder
-                            HKWorkoutRouteBuilder *routeBuilder = [[HKWorkoutRouteBuilder alloc] initWithHealthStore:self->hkstore device:[self ReturnDeviceInfo]];
+                            // Define route location array
+                            __block NSMutableArray *heartArray = [NSMutableArray array];
+                            __block NSMutableArray *routeArray = [NSMutableArray array];
                             
-                            [routeBuilder insertRouteData:routeArray completion:^(BOOL success, NSError * _Nullable error) {
-                                if(error){
-                                    //NSLog(@"%@", error);
-                                }else{
-                                    NSMutableDictionary * metadata = [self ReturnMetadata:@"WorkoutRoute" date:startDateRaw extra:nil];
-                                    [routeBuilder finishRouteWithWorkout:workout metadata:(metadata) completion:^(HKWorkoutRoute * _Nullable workoutRoute, NSError * _Nullable error) {
-                                        
-                                        //NSLog(@"%@", workoutRoute);
-                                    }];
-                                    [routeArray removeAllObjects];
-                                }
-                            }];
+                            // Retrieve lat/long on each point
+                            for(NSDictionary * latlong in points){
+                                NSDictionary * container = [latlong objectForKey:@"Position"];
+
+                                double latitude = [[[container objectForKey:@"LatitudeDegrees"] objectForKey:@"text"] doubleValue];
+                                double longitude = [[[container objectForKey:@"LongitudeDegrees"] objectForKey:@"text"] doubleValue];
+                                double altitude = [[[latlong objectForKey:@"AltitudeMeters"] objectForKey:@"text"] doubleValue];
+
+                                // Timestamp
+                                NSDate * timestamp = [self convertDateTimeZ:[[latlong objectForKey:@"Time"] objectForKey:@"text"]];
+                                
+                                
+                                double HeartRateBpm = [[[[latlong objectForKey:@"HeartRateBpm"] objectForKey:@"Value"] objectForKey:@"text"] doubleValue];
+                                HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:HeartRateBpm];
+                                
+                                // Create sample
+                                HKQuantitySample * hrSample = [HKQuantitySample quantitySampleWithType:heartType quantity:quantity startDate:timestamp endDate:timestamp];
+                                
+                                // Add to sample array
+                                [heartArray addObject:hrSample];
+
+                                CLLocation *test = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:altitude horizontalAccuracy:-1 verticalAccuracy:-1 timestamp:timestamp];
+
+                                // Add to route array
+                                [routeArray addObject:test];
+                            }
+                            
+                            if([heartArray count] == 0 && [routeArray count] == 0){
+                                dispatch_group_leave(group2);
+                            }else if([heartArray count] == 0){
+                                // Do nothing
+                            }else{
+                                // Insert into healthkit
+                                [self->hkstore addSamples:heartArray toWorkout:workout completion:^(BOOL success, NSError *error) {
+                                    if(error){ NSLog(@"%@", error); }
+                                    
+                                    if([routeArray count] == 0){
+                                        dispatch_group_leave(group2);
+                                    }
+                                }];
+                            }
+                            
+                            // Add GPS to workout
+                            if([routeArray count] > 0){
+                                
+                                // Declare route builder
+                                HKWorkoutRouteBuilder *routeBuilder = [[HKWorkoutRouteBuilder alloc] initWithHealthStore:self->hkstore device:[self ReturnDeviceInfo:nil]];
+                                
+                                [routeBuilder insertRouteData:routeArray completion:^(BOOL success, NSError * _Nullable error) {
+                                    if(error){
+                                        dispatch_group_leave(group2);
+                                    }else{
+                                        NSMutableDictionary * metadata = [self ReturnMetadata:@"WorkoutRoute" date:startDateRaw extra:nil];
+                                        [routeBuilder finishRouteWithWorkout:workout metadata:(metadata) completion:^(HKWorkoutRoute * _Nullable workoutRoute, NSError * _Nullable error) {
+                                            dispatch_group_leave(group2);
+                                        }];
+                                    }
+                                }];
+                            }
                         }else{
-                            [routeArray removeAllObjects];
+                            dispatch_group_leave(group2);
                         }
                     }];
+                }else{
+                    if(averageHeartRate != 0){
+                        
+                        NSMutableArray *averageHeartRateArray = [NSMutableArray array];
+                        HKQuantityType *heartRateAverageType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
+                        HKQuantity *heartRateAverageForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count/min"] doubleValue:averageHeartRate];
+                        
+                        // Create sample
+                        HKQuantitySample *heartRateAverageForIntervalSample = [HKQuantitySample quantitySampleWithType:heartRateAverageType
+                                                                                                              quantity:heartRateAverageForInterval
+                                                                                                             startDate:startTime
+                                                                                                               endDate:endTime];
+                        
+                        [averageHeartRateArray addObject:heartRateAverageForIntervalSample];
+                        
+                        [self->hkstore addSamples:averageHeartRateArray toWorkout:workout completion:^(BOOL success, NSError * _Nullable error) {
+                            dispatch_group_leave(group2);
+                        }];
+                    }else{
+                        dispatch_group_leave(group2);
+                    }
                 }
-
-                // Sample Array
-                NSMutableArray *samples = [NSMutableArray array];
-
-                // Heart rate average insert into samples
-                HKQuantityType *heartRateType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate];
-                HKQuantity *heartRateForInterval = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"count/min"] doubleValue:averageHeartRate];
-
-                // Create sample
-                HKQuantitySample *heartRateForIntervalSample =
-                [HKQuantitySample quantitySampleWithType:heartRateType
-                                                quantity:heartRateForInterval
-                                               startDate:startTime
-                                                 endDate:endTime];
-
-                // Insert into sample array
-                [samples addObject:heartRateForIntervalSample];
-
-                // Insert into healthkit
-                [self->hkstore addSamples:samples toWorkout:workout completion:^(BOOL success, NSError *error) {
-                    if(error){ NSLog(@"%@", error); }
-                }];
             }
         }];
     }
+    
+    dispatch_group_notify(group2, dispatch_get_main_queue(), ^{
+        //weakSelf->workoutsCompleted = 1;
+        NSLog(@"finished!");
+    });
+    
 }
 
 -(void)showAlert :(NSString *)message{
