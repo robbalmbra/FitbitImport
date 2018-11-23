@@ -101,6 +101,10 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 -(void)viewWillAppear:(BOOL)animated
 {
     
+    if(self->apiNoRequests == 1){
+        resultView.textColor = [UIColor redColor];
+    }
+    
     // Water Switch
     BOOL switchState = [[NSUserDefaults standardUserDefaults] boolForKey:@"waterSwitch"];
     if([[NSUserDefaults standardUserDefaults] objectForKey:@"waterSwitch"] == nil) {
@@ -1569,10 +1573,19 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                                                        totalDistance:totalDistance
                                                        device:[self ReturnDeviceInfo]
                                                        metadata:metadata];
-    
     }else{
+
         // Create swimming workout
-        
+        NSDictionary * metadata = [self ReturnMetadata:@"Workout" date:RawDateTime extra:MetaOptions];
+        workout = [HKWorkout workoutWithActivityType:workoutType
+                                                        startDate:StartDate
+                                                        endDate:EndDate
+                                                        workoutEvents:nil
+                                                        totalEnergyBurned:totalCalories
+                                                        totalDistance:totalDistance
+                                                        totalSwimmingStrokeCount:0
+                                                        device:[self ReturnDeviceInfo]
+                                                        metadata:metadata];
     }
     
     // Return workout
@@ -1849,6 +1862,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
 
+    __block int quitBlock = 0;
     dispatch_group_t group = dispatch_group_create();
 
     NSMutableArray *URLS = [self generateURLS];
@@ -1921,11 +1935,15 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 NSInteger new_number = nowEpochSeconds - (nowEpochSeconds % 3600);
                 self->nearestHour = (new_number + 3600) + 15;
 
-                self->apiNoRequests = 1;
+                
                 self->running = 0;
                 self->resultView.textColor = [UIColor redColor];
-                [self logText:@"Too many requests, try again later..."];
-                self->resultView.text = @"Too many requests, try again later...";
+
+                if(self->apiNoRequests == 0){
+                    [self logText:@"Too many requests, try again later..."];
+                    self->resultView.text = @"Too many requests, try again later...";
+                }
+                self->apiNoRequests = 1;
             }else{
                 if(self->isDarkMode == 1){
                     self->resultView.textColor = [UIColor whiteColor];
@@ -1974,6 +1992,8 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     }else{
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         [defaults setValue:@"" forKey:@"OutputLog"];
+        
+        [self logText:@"Sync Started..."];
         self->running = 1;
     }
     
