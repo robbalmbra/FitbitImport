@@ -1,4 +1,4 @@
-![Kiku](images/heart@1x.png)
+![Kiku](images/heart@0.75.png)
 
 # FitbitImport
 
