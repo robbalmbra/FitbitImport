@@ -1,3 +1,5 @@
+![Kiku](images/heart@1x.png)
+
 # FitbitImport
 
 IOS application that bridges the gap between Fitbit data and HealthKit. Through Fitbit's api plenty of data can be requested through the Oauth service.
