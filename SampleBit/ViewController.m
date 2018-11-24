@@ -8,6 +8,7 @@
 
 #import "ViewController.h"
 #import "FitbitExplorer.h"
+@import CoreBluetooth;
 @import CoreLocation;
 @import HealthKit;
 
@@ -51,6 +52,8 @@
     __block double count;
     __block double progress;
     __block BOOL launchedFitAuth;
+    __block CBCentralManager * centralManager;
+    __block NSMutableArray *activityLogArray;
     
 }
 
@@ -74,6 +77,8 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                                              selector:@selector(applicationDidEnterBackground:)
                                                  name:UIApplicationDidEnterBackgroundNotification
                                                object:nil];
+    
+    activityLogArray = [[NSMutableArray alloc] init];
     
     self->nearestHour = -1;
     self->launchedFitAuth = 0;
@@ -245,7 +250,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         isDarkMode = 0;
         self.view.backgroundColor = [UIColor whiteColor];
         resultView.backgroundColor = [UIColor whiteColor];
-        if(isRed == 0){
+        if(apiNoRequests == 0){
             resultView.textColor = [UIColor blackColor];
         }
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
@@ -257,7 +262,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         isDarkMode = 0;
         self.view.backgroundColor = [UIColor whiteColor];
         resultView.backgroundColor = [UIColor whiteColor];
-        if(isRed == 0){
+        if(apiNoRequests == 0){
             resultView.textColor = [UIColor blackColor];
         }
         self.tabBarController.tabBar.tintColor = [UIColor whiteColor];
@@ -266,7 +271,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         // Turned on
         self.view.backgroundColor = [UIColor blackColor];
         resultView.backgroundColor = [UIColor blackColor];
-        if(isRed == 0){
+        if(apiNoRequests == 0){
             resultView.textColor = [UIColor whiteColor];
         }
         darkModeSwitch = 1;
@@ -319,11 +324,24 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     
     // How many days to process (today - Days);
     NSInteger Days = 3;
-        
+
     //////////////////////////////////////////// Get step data //////////////////////////////////////////////////////
+    // To save API rate limit, assign the values of the completed 2 days from StartDate to yesterday to an array
+    // allowing only today to be processed - TODO for 'for' loop type requests below
+
     if(self->stepsSwitch){
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
+            
+            // Only parse first 2 days
+            if(i != 2){
+                if([self ArrayContains:AS(dateNow,@"Steps") routeArray:activityLogArray]){
+                    [self logText:@"    Skipping Steps - Already installed"];
+                    continue;
+                }
+                [activityLogArray addObject:AS(dateNow,@"Steps")];
+            }
+
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/steps/date/%@/1d/15min.json",dateNow];
             entity = [NSString stringWithFormat:@"steps"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -334,6 +352,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     if(self->floorsSwitch){
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
+            
+            // Only parse first 2 days
+            if(i != 2){
+                if([self ArrayContains:AS(dateNow,@"Floors") routeArray:activityLogArray]){
+                    [self logText:@"    Skipping Floors - Already installed"];
+                    continue;
+                }
+                [activityLogArray addObject:AS(dateNow,@"Floors")];
+            }
+
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/floors/date/%@/1d/15min.json",dateNow];
             entity = [NSString stringWithFormat:@"floors"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -351,6 +379,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     if(self->heartRateSwitch){
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
+            
+            // Only parse first 2 days
+            if(i != 2){
+                if([self ArrayContains:AS(dateNow,@"HeartRate") routeArray:activityLogArray]){
+                    [self logText:@"    Skipping Heart Rate - Already installed"];
+                    continue;
+                }
+                [activityLogArray addObject:AS(dateNow,@"HeartRate")];
+            }
+            
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/heart/date/%@/1d/1min.json",dateNow];
             entity = [NSString stringWithFormat:@"heart rate"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -368,6 +406,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     if(self->activeEnergy){
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
+            
+            // Only parse first 2 days
+            if(i != 2){
+                if([self ArrayContains:AS(dateNow,@"Energy") routeArray:activityLogArray]){
+                    [self logText:@"    Skipping Energy - Already installed"];
+                    continue;
+                }
+                [activityLogArray addObject:AS(dateNow,@"Energy")];
+            }
+            
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/calories/date/%@/1d/15min.json",dateNow];
             entity = [NSString stringWithFormat:@"calories"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -378,6 +426,16 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     if(self->nutrients){
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
+            
+            // Only parse first 2 days
+            if(i != 2){
+                if([self ArrayContains:AS(dateNow,@"Nutrients") routeArray:activityLogArray]){
+                    [self logText:@"    Skipping Nutrients - Already installed"];
+                    continue;
+                }
+                [activityLogArray addObject:AS(dateNow,@"Nutrients")];
+            }
+            
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
             entity = [NSString stringWithFormat:@"nutrients"];
             [array addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
@@ -413,7 +471,10 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
     // Initial message, starting to sync
     if(self->apiNoRequests == 0){
         self->running = 1;
-        resultView.text = @"Syncing data started...";
+
+        dispatch_async(dispatch_get_main_queue(),^{
+            self->resultView.text = @"Syncing data started...";
+        });
 
         // Loop over all urls
         [self getFitbitUserID];
@@ -1904,6 +1965,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         }else{
             [self logText:@"Too many requests, try again later..."];
             self->resultView.text = @"Too many requests, try again later...";
+            self->ProgressBar.hidden = true;
             self->resultView.textColor = [UIColor redColor];
             self->running = 0;
         }
@@ -1953,35 +2015,38 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         [manager requestGET:url xml:0 Token:token success:^(NSDictionary *responseObject) {
 
             // Update interface with message, passed from entity
-            if(self->backgroundModeOn == 0){
+            if(self->apiNoRequests == 0){
                 
                 self->progress+=self->count;
                 self->ProgressBar.progress = (float)self->progress;
                 self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
-            }
                 
-            // Print method to console and log
-            NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
-            [self logText:output];
+                // Print method to console and log
+                NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
+                [self logText:output];
             
-            // Pass data to individual methods for processing
-            NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
-            NSString *methodArgs = AS(methodName,@":");
+                // Pass data to individual methods for processing
+                NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
+                NSString *methodArgs = AS(methodName,@":");
 
-            //Only accept valid json response
-            if([responseObject count] != 0){
-                @try{
-                    // Retrieve method for selected activity
-                    SEL doubleParamSelector = NSSelectorFromString(methodArgs);
-                    [self performSelector: doubleParamSelector withObject: responseObject];
+                //Only accept valid json response
+                if([responseObject count] != 0){
+                    @try{
+                        // Retrieve method for selected activity
+                        SEL doubleParamSelector = NSSelectorFromString(methodArgs);
+                        [self performSelector: doubleParamSelector withObject: responseObject];
+                    }
+                    @catch (NSException *exception){
+                        // Catch if failed
+                        NSString * methodError = AS(AS(@"Error - Failed to find method `",methodName),@"`.");
+                        NSLog(@"%@", exception);
+                        [self logText:methodError];
+                    }
                 }
-                @catch (NSException *exception){
-                    // Catch if failed
-                    NSString * methodError = AS(AS(@"Error - Failed to find method `",methodName),@"`.");
-                    NSLog(@"%@", exception);
-                    [self logText:methodError];
-                }
+            }else{
+                self->ProgressBar.hidden = true;
             }
+
             // Leave group
             dispatch_group_leave(group);
 
@@ -2011,12 +2076,11 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                 self->running = 0;
                 self->resultView.textColor = [UIColor redColor];
 
-                if(self->apiNoRequests == 0){
-                    [self logText:@"Too many requests, try again later..."];
-                    self->resultView.textColor = [UIColor redColor];
-                    self->resultView.text = @"Too many requests, try again later...";
-                    self->running = 0;
-                }
+                [self logText:@"Too many requests, try again later..."];
+                self->resultView.textColor = [UIColor redColor];
+                self->resultView.text = @"Too many requests, try again later...";
+                self->ProgressBar.hidden = true;
+                self->running = 0;
                 self->apiNoRequests = 1;
             }else{
                 if(self->isDarkMode == 1){
@@ -2042,6 +2106,11 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
             
             NSRunLoop *runloop = [NSRunLoop currentRunLoop];
             [runloop addTimer:self->timer forMode:NSDefaultRunLoopMode];
+        }else{
+            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+            self->ProgressBar.hidden = true;
+            [defaults setValue:@"Sync Started...\nToo many requests, try again later..." forKey:@"OutputLog"];
+            self->running = 0;
         }
     });
 }
@@ -2094,6 +2163,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
         self->nearestHour = -1;
         self->ProgressBar.hidden = true;
     }else{
+        self->apiNoRequests = 1;
         self->ProgressBar.hidden = true;
         [self logText:@"Too many requests, try again later..."];
         self->resultView.text = @"Too many requests, try again later...";
@@ -2267,7 +2337,7 @@ typedef void (^QueryCompletetionBlock)(NSInteger count, NSError * error);
                         self->resultView.textColor = [UIColor blackColor];
                     }
                 });
-                
+    
                 // Only run safari fitbit auth once
                 if(self->launchedFitAuth == 0){
                     [self->fitbitAuthHandler login:self];
