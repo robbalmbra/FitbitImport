@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "SampleBit/ViewController.m"
-            timestampString = "564930619.967872"
+            timestampString = "564960615.328316"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1377"
-            endingLineNumber = "1377"
+            startingLineNumber = "1455"
+            endingLineNumber = "1455"
             landmarkName = "-InstallHistoricData"
             landmarkType = "7">
          </BreakpointContent>
@@ -42,11 +42,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "SampleBit/ViewController.m"
-            timestampString = "564930619.967989"
+            timestampString = "564960615.328914"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1794"
-            endingLineNumber = "1794"
+            startingLineNumber = "1872"
+            endingLineNumber = "1872"
             landmarkName = "-GetWorkout:"
             landmarkType = "7">
          </BreakpointContent>
@@ -58,11 +58,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "SampleBit/ViewController.m"
-            timestampString = "564930619.96806"
+            timestampString = "564960615.329368"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "319"
-            endingLineNumber = "319"
+            startingLineNumber = "352"
+            endingLineNumber = "352"
             landmarkName = "-countPoints:unit:dateArray:completion:"
             landmarkType = "7">
          </BreakpointContent>

@@ -109,6 +109,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             self->backgroundModeOn = 1;
             self->running = 1;
             NSLog(@"Running background mode");
+
             [self getFitbitUserID];
         }
     }
@@ -316,15 +317,15 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     [defaults synchronize];
 }
 
--(void)countPoints:(HKSampleType *) type unit:(HKUnit *) unit dateArray:(NSMutableArray*) dateArray completion:(QueryCompletionBlock)completionBlock{
+// Return count for single
+-(void)countSinglePoints:(HKSampleType *) type unit:(HKUnit *) unit dataArray:(NSMutableArray *) dateArray completion:(QueryCompletionBlock)completionBlock{
+
+    // Date/time on first day
+    NSDate *startDate = [self stitchDateTime:AS(dateArray[0][1],@" 00:00:00")];
+    NSDate *endDate = [self stitchDateTime:AS(dateArray[0][1],@" 23:59:59")];
     
-    // Date/time
-    NSDate *startDate = [self stitchDateTime:AS(dateArray[0][2],@" 00:00:00")];
-    NSDate *endDate = [self stitchDateTime:AS(dateArray[0][2],@" 23:59:59")];
-    
-    // Specifiy search parameters
     NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
-    
+
     // Search query
     HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type predicate:predicate limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
         
@@ -338,6 +339,38 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 output += [sample.quantity doubleValueForUnit:unit];
             }
             
+            // Return
+            completionBlock(output,dateArray,nil);
+        }
+    }];
+
+    // Run query
+    [self->hkstore executeQuery:query];
+}
+
+// Return count for array
+-(void)countPoints:(HKSampleType *) type unit:(HKUnit *) unit dateArray:(NSMutableArray*) dateArray completion:(QueryCompletionBlock)completionBlock{
+    
+    // Date/time
+    NSDate *startDate = [self stitchDateTime:AS(dateArray[0][2],@" 00:00:00")];
+    NSDate *endDate = [self stitchDateTime:AS(dateArray[0][2],@" 23:59:59")];
+    
+    // Specifiy search parameters
+    NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionNone];
+    
+    // Search query
+    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type predicate:predicate limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
+
+        if(error){
+            // Return
+            completionBlock(0,dateArray,error);
+        }else{
+
+            double output = 0;
+            for(HKQuantitySample * sample in results){
+                output += [sample.quantity doubleValueForUnit:unit];
+            }
+
             // Return
             completionBlock(output,dateArray,nil);
         }
@@ -486,6 +519,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     if(self->weightSwitch){
         self->typeCountCheck += 1;
         NSMutableArray *array4 = [[NSMutableArray alloc] init];
+
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/body/weight/date/%@/%@.json",startDate, endDate];
@@ -547,7 +581,52 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         }];
     }
 
-    // Convert below to async functions - TODO
+    //////////////////////////////////////////////// Water Consumed ///////////////////////////////////////////////
+    if(self->waterSwitch){
+        self->typeCountCheck += 1;
+        NSMutableArray *array5 = [[NSMutableArray alloc] init];
+        entity = [NSString stringWithFormat:@"water"];
+
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            [array5 addObject:[NSMutableArray arrayWithObjects:entity,dateNow,nil]];
+        }
+        
+        // Check healthkit for duplicate data
+        HKSampleType *sampleType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
+        HKUnit * unit= [HKUnit unitFromString:@"ml"];
+        
+        __block NSDate *startDate;
+        __block NSDate *endDate;
+        
+        [self countSinglePoints:sampleType unit:unit dataArray:array5 completion:^(NSInteger count, NSMutableArray *data, NSError *error) {
+            
+            // Entity
+            NSString * entity = array5[0][0];
+            
+            if(count != 0){
+                [array5 removeObjectAtIndex:2];
+                [array5 removeObjectAtIndex:1];
+                
+                startDate = array5[0][1];
+                endDate = array5[0][1];
+            }else{
+                startDate = array5[2][1];
+                endDate = array5[0][1];
+            }
+            
+            // Add to array
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
+            
+            [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+
+            // Increase count
+            self->typeCount +=1;
+            
+        }];
+        
+
+    }
 
     ////////////////////////////////////////////// Get workout data ////////////////////////////////////////////////
     if(self->distanceSwitch){
@@ -578,12 +657,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         }
      }
 
-    //////////////////////////////////////////////// Water Consumed ///////////////////////////////////////////////
-    if(self->waterSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
-        entity = [NSString stringWithFormat:@"water"];
-        [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-    }
+
 
     ///////////////////////////////////////////////////// Sleep //////////////////////////////////////////////////////
     if(self->sleepSwitch){
