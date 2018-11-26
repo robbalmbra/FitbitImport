@@ -349,6 +349,9 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 -(void)isComplete:(NSTimer *)theTimer{
     if(self->typeCountCheck == self->typeCount){
         
+        // Calculate progress bar
+        self->count = 1.0f/([self->urlArray count] + 1);
+        
         // Run get fitbit data
         [self getFitbitURL];
 
@@ -452,7 +455,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned];
-        HKUnit *unit = [HKUnit countUnit];
+        HKUnit *unit = [HKUnit unitFromString:@"cal"];
         
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array3 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
@@ -502,7 +505,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
-        HKUnit *unit = [HKUnit countUnit];
+        HKUnit *unit = [HKUnit unitFromString:@"kg"];
         
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array4 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
@@ -562,14 +565,14 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
      }
-    
+
     //////////////////////////////////////////////// Water Consumed ///////////////////////////////////////////////
     if(self->waterSwitch){
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
         entity = [NSString stringWithFormat:@"water"];
         [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
-    
+
     ///////////////////////////////////////////////////// Sleep //////////////////////////////////////////////////////
     if(self->sleepSwitch){
         url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
