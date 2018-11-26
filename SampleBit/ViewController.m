@@ -56,6 +56,7 @@
     __block int typeCount;
     __block int typeCountCheck;
     __block NSMutableArray *urlArray;
+    __block NSMutableArray *skipArray;
     __block BOOL foundWorkout;
 }
 
@@ -363,6 +364,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 -(void)generateURLS{
 
     self->urlArray = [[NSMutableArray alloc] init];
+    self->skipArray = [[NSMutableArray alloc] init];
 
     NSString *startDate = [self calcDate:3];
     NSString *endDate = [self dateNow];
@@ -396,6 +398,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         [self countPoints:sampleType unit:unit dateArray:array1 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             
             if(count != 0){
+                [self->skipArray addObject:@"steps"];
+                [self->skipArray addObject:@"steps"];
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
@@ -428,6 +432,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array2 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             if(count != 0){
+                [self->skipArray addObject:@"floors"];
+                [self->skipArray addObject:@"floors"];
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
@@ -460,6 +466,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array3 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             if(count != 0){
+                [self->skipArray addObject:@"calories"];
+                [self->skipArray addObject:@"calories"];
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
@@ -472,24 +480,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             // Increase count
             self->typeCount +=1;
         }];
-    }
-    
-    ////////////////////////////////////////////// Get workout data ////////////////////////////////////////////////
-    if(self->distanceSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T23:59:59&sort=desc&limit=20&offset=0",endDate];
-        entity = [NSString stringWithFormat:@"workout"];
-        [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-    }
-
-    ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
-    if(self->nutrients){
-        for(int i=0; i<Days; i++){
-            NSString *dateNow = [self calcDate:i];
-
-            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
-            entity = [NSString stringWithFormat:@"nutrients"];
-            [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-        }
     }
     
     ////////////////////////////////////////////// Weight/BMI /////////////////////////////////////////////////////
@@ -510,6 +500,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array4 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             if(count != 0){
+                [self->skipArray addObject:@"weight"];
+                [self->skipArray addObject:@"weight"];
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
@@ -539,6 +531,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Query and return
         [self countPoints:sampleType2 unit:unit2 dateArray:array5 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             if(count != 0){
+                [self->skipArray addObject:@"bmi"];
+                [self->skipArray addObject:@"bmi"];
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
@@ -554,6 +548,24 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     }
 
     // Convert below to async functions - TODO
+
+    ////////////////////////////////////////////// Get workout data ////////////////////////////////////////////////
+    if(self->distanceSwitch){
+        url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/activities/list.json?beforeDate=%@T23:59:59&sort=desc&limit=20&offset=0",endDate];
+        entity = [NSString stringWithFormat:@"workout"];
+        [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+    }
+    
+    ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
+    if(self->nutrients){
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
+            entity = [NSString stringWithFormat:@"nutrients"];
+            [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+        }
+    }
     
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     if(self->heartRateSwitch){
@@ -1121,6 +1133,13 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     NSInteger count = 1;
     NSString * output = @"";
     
+    // Present skips if needed
+    for(int i=0; i< [self->skipArray count]; i++){
+        if([self->skipArray[i]  isEqual: @"Floors"]){
+            [self logText:@"Skipping Floors - Already inserted into healthkit"];
+        }
+    }
+    
     // Iterate over results
     for(NSDictionary * entry in stepsIntraday){
         
@@ -1214,6 +1233,13 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     double stepCount = 0;
     NSInteger count = 1;
     NSString * output = @"";
+    
+    // Present skips if needed
+    for(int i=0; i< [self->skipArray count]; i++){
+        if([self->skipArray[i]  isEqual: @"Steps"]){
+            [self logText:@"Skipping Steps - Already inserted into healthkit"];
+        }
+    }
     
     // Iterate over results
     for(NSDictionary * entry in stepsIntraday){
@@ -2122,7 +2148,9 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Create dispatch block
     dispatch_group_t group = dispatch_group_create();
     
+    
     self->foundWorkout = 0;
+    __block NSMutableArray * prevTypes = [[NSMutableArray alloc] init];
     
     // Iterate over URLS
     NSMutableArray *URLS = self->urlArray;
@@ -2154,12 +2182,26 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 
                 self->progress+=self->count;
                 self->ProgressBar.progress = (float)self->progress;
-                self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
                 
-                // Print method to console and log
-                NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
-                [self logText:output];
-            
+                // Skip processing if in loop
+                if([self ArrayContains:type routeArray:prevTypes]){
+                    //ignore
+                }else{
+                    self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
+                    NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
+                    [self logText:output];
+                    
+                    // Print out skips
+                    for(int i=0; i<[self->skipArray count]; i++){
+                        if([self->skipArray[i] isEqualToString: type]){
+                            [self logText:AS(AS(@"Skipping ", type),@" - Already inserted into healthkit")];
+                        }
+                    }
+                    
+                    // Only display prompt once
+                    [prevTypes addObject:type];
+                }
+                
                 // Pass data to individual methods for processing
                 NSString *methodName = AS(@"Process",[[type capitalizedString] stringByReplacingOccurrencesOfString:@" " withString:@""]);
                 NSString *methodArgs = AS(methodName,@":");
