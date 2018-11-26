@@ -37,6 +37,7 @@
 	<string></string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<string>fitbit</string>
 		<string>samplebit://</string>
 		<string>com.fitbit.SampleBit</string>
 	</array>
@@ -62,6 +63,8 @@
 	<array>
 		<string>armv7</string>
 	</array>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Detecting if bluetooth is on to connect to the fitbit</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
