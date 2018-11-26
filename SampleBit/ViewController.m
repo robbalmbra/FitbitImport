@@ -56,6 +56,7 @@
     __block int typeCount;
     __block int typeCountCheck;
     __block NSMutableArray *urlArray;
+    __block BOOL foundWorkout;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -347,7 +348,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
 -(void)isComplete:(NSTimer *)theTimer{
     if(self->typeCountCheck == self->typeCount){
-        NSLog(@"%@", self->urlArray);
         
         // Run get fitbit data
         [self getFitbitURL];
@@ -2091,8 +2091,17 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
 - (void)timerCallback:(NSTimer*)theTimer
 {
-    if(self->workoutComplete == 1){
+    if(self->foundWorkout == 1 && self->workoutComplete == 1){
         
+        self->progress+=self->count;
+        self->ProgressBar.progress = (float)self->progress;
+        
+        [self logText:@"Sync Complete"];
+        [theTimer invalidate];
+        
+        self->resultView.text = @"Sync Complete";
+        self->running = 0;
+    }else{
         self->progress+=self->count;
         self->ProgressBar.progress = (float)self->progress;
         
@@ -2110,6 +2119,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Create dispatch block
     dispatch_group_t group = dispatch_group_create();
     
+    self->foundWorkout = 0;
+    
     // Iterate over URLS
     NSMutableArray *URLS = self->urlArray;
     for (NSMutableArray *entity in URLS){
@@ -2121,6 +2132,10 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Retrieve url and activity type
         NSString *url = entity[0];
         __block NSString *type = entity[1];
+        
+        if([type  isEqual: @"workout"]){
+            self->foundWorkout = 1;
+        }
         
         // Enter group
         dispatch_group_enter(group);
@@ -2327,9 +2342,23 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                             ];
     
     NSArray *readTypes = @[
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierHeartRate],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierRestingHeartRate],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed],
                            [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis],
-                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount]
-                          ];
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySodium],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex],
+                           [HKObjectType workoutType],
+                           [HKSeriesType workoutRouteType]
+                           ];
     
     
         hkstore = [[HKHealthStore alloc] init];
