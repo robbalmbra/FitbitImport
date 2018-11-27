@@ -2004,6 +2004,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                             __block NSMutableArray *heartArray = [NSMutableArray array];
                             __block NSMutableArray *routeArray = [NSMutableArray array];
                             
+                            int HeartRateTotal = 0;
+                            
                             // Retrieve lat/long on each point
                             for(NSDictionary * latlong in points){
                                 NSDictionary * container = [latlong objectForKey:@"Position"];
@@ -2017,6 +2019,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                                 
                                 
                                 double HeartRateBpm = [[[[latlong objectForKey:@"HeartRateBpm"] objectForKey:@"Value"] objectForKey:@"text"] doubleValue];
+                                HeartRateTotal += HeartRateBpm;
+                                
                                 HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:HeartRateBpm];
                                 
                                 // Create sample
@@ -2036,14 +2040,23 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                             }else if([heartArray count] == 0){
                                 // Do nothing
                             }else{
-                                // Insert into healthkit
-                                [self->hkstore addSamples:heartArray toWorkout:workout completion:^(BOOL success, NSError *error) {
-                                    if(error){ NSLog(@"%@", error); }
-                                    
+                                // Test if heart rate hasnt been transferred from device
+                                if(HeartRateTotal == 0){
+                                    [self->workoutArray removeObject:[entry objectForKey:@"startTime"]];
+
                                     if([routeArray count] == 0){
                                         dispatch_group_leave(group2);
                                     }
-                                }];
+                                }else{
+                                    // Insert into healthkit
+                                    [self->hkstore addSamples:heartArray toWorkout:workout completion:^(BOOL success, NSError *error) {
+                                        if(error){ NSLog(@"%@", error); }
+                                        
+                                        if([routeArray count] == 0){
+                                            dispatch_group_leave(group2);
+                                        }
+                                    }];
+                                }
                             }
                             
                             // Add GPS to workout
@@ -2307,14 +2320,14 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                     self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
                     NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
                     [self logText:output];
-                    
+
                     // Print out skips
                     for(int i=0; i<[self->skipArray count]; i++){
                         if([self->skipArray[i] isEqualToString: type]){
                             [self logText:AS(AS(@"Skipping ", type),@" - Already inserted into healthkit")];
                         }
                     }
-                    
+
                     // Only display prompt once
                     [prevTypes addObject:type];
                 }
