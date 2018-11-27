@@ -328,17 +328,22 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
     // Search query
     HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type predicate:predicate limit:HKObjectQueryNoLimit sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
-        
+
         if(error){
             // Return
             completionBlock(0,dateArray,error);
         }else{
-            
+
             double output = 0;
             for(HKQuantitySample * sample in results){
-                output += [sample.quantity doubleValueForUnit:unit];
+                if(unit != 0){
+                    output += [sample.quantity doubleValueForUnit:unit];
+                }else{
+                    // Sleep
+                    output += 1;
+                }
             }
-            
+
             // Return
             completionBlock(output,dateArray,nil);
         }
@@ -605,6 +610,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             NSString * entity = array5[0][0];
             
             if(count != 0){
+                [self->skipArray addObject:@"water"];
+                [self->skipArray addObject:@"water"];
                 [array5 removeObjectAtIndex:2];
                 [array5 removeObjectAtIndex:1];
                 
@@ -622,10 +629,53 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
             // Increase count
             self->typeCount +=1;
-            
         }];
-        
+    }
 
+    ///////////////////////////////////////////////////// Sleep ////////////////////////////////////////////////////
+    if(self->sleepSwitch){
+        self->typeCountCheck += 1;
+        NSMutableArray *array6 = [[NSMutableArray alloc] init];
+        entity = [NSString stringWithFormat:@"sleep"];
+        
+        for(int i=0; i<Days; i++){
+            NSString *dateNow = [self calcDate:i];
+            [array6 addObject:[NSMutableArray arrayWithObjects:entity,dateNow,nil]];
+        }
+       
+        // Check healthkit for duplicate data
+        HKSampleType *sampleType = [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierSleepAnalysis];
+        HKUnit * unit=0;
+        
+        __block NSDate *startDate;
+        __block NSDate *endDate;
+        
+        [self countSinglePoints:sampleType unit:unit dataArray:array6 completion:^(NSInteger count, NSMutableArray *data, NSError *error) {
+           
+            // Entity
+            NSString * entity = array6[0][0];
+            
+            if(count != 0){
+                [self->skipArray addObject:@"sleep"];
+                [self->skipArray addObject:@"sleep"];
+                [array6 removeObjectAtIndex:2];
+                [array6 removeObjectAtIndex:1];
+                
+                startDate = array6[0][1];
+                endDate = array6[0][1];
+            }else{
+                startDate = array6[2][1];
+                endDate = array6[0][1];
+            }
+            
+            // Add to array
+            url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
+            
+            [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
+            
+            // Increase count
+            self->typeCount +=1;
+        }];
     }
 
     ////////////////////////////////////////////// Get workout data ////////////////////////////////////////////////
@@ -634,6 +684,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         entity = [NSString stringWithFormat:@"workout"];
         [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
+    
+    // Convert to async below - TODO
     
     ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
     if(self->nutrients){
@@ -656,15 +708,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
      }
-
-
-
-    ///////////////////////////////////////////////////// Sleep //////////////////////////////////////////////////////
-    if(self->sleepSwitch){
-        url = [NSString stringWithFormat:@"https://api.fitbit.com/1.2/user/-/sleep/date/%@/%@.json", startDate, endDate];
-        entity = [NSString stringWithFormat:@"sleep"];
-        [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
-    }
     
     // Timer to complete async methods
     self->timer = [NSTimer timerWithTimeInterval:1.0 target:self selector:@selector(isComplete:) userInfo:nil repeats:YES];
@@ -1687,16 +1730,16 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
         NSDate *now = [NSDate date];
         NSNumber *nowEpochSeconds = [NSNumber numberWithInt:[now timeIntervalSince1970]];
-        
+
         NSString *identifer = AS(start,@"Asleep");
-        
+
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
           HKMetadataKeySyncVersion: nowEpochSeconds};
 
         //Update
         [self UpdateSQL:@"0" type:@"Sleep" date1:[self convertDateTimetoString:startDate] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertDateTimetoString:endDate]];
-        
+
         // Get start and end of sleep
         HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
