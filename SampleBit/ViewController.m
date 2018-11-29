@@ -291,25 +291,25 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     }
 }
 
--(void)logText:(NSString *) text {
+-(void)logText:(NSString *) text reset:(int) reset {
     
     // Retrieve string
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString * logContent = [[NSUserDefaults standardUserDefaults] objectForKey:@"OutputLog"];
 
     // Check if logContent is nil
-    if(logContent == nil){
+    if(logContent == nil || reset == 1){
         logContent = @"";
     }
-    
+
     // Add time prefix
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"hh:mm:ss"];
     NSString * date = AS(AS(@"[",[formatter stringFromDate:[NSDate date]]),@"] ");
-    
+
     // Print message to console
     NSLog(@"%@", text);
-    
+
     // Append to string
     NSString * outputContent = AS(logContent,AS(date,AS(text,@"\n")));
 
@@ -852,13 +852,13 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 {
     NSString * locale = self->locale;
     NSString * unitType;
-
+    
     if([locale isEqual: @"en_GB"]){
         // en_GB locale
         if([type isEqual: @"Water"]){ unitType=@"ml"; } // Water Consumed - ML
         if([type isEqual: @"Calories"]){ unitType=@"cal"; } // Calories Consumed - Calories
         if([type isEqual:@"Nutrients"]){ unitType=@"g"; } // Nutrients Consumed - Grams
-        if([type isEqual: @"Weight"]){ unitType=@"st"; } // Weight - Stones
+        if([type isEqual: @"Weight"]){ unitType=@"kg"; } // Weight - Kg
         if([type isEqual: @"Steps"]){ unitType=@"count"; } // Steps
         if([type isEqual: @"Floors"]){ unitType=@"count"; } // Floors
         if([type isEqual: @"BMI"]){ unitType=@"count"; } // BMI
@@ -941,6 +941,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     
     // Healthkit unit and type declarations
     HKUnit * unit = [self getUnit:@"Weight"];
+    
     HKQuantityType *weightType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
     HKQuantity *weightQuantity;
     HKQuantitySample * weightSample;
@@ -1292,7 +1293,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Present skips if needed
     for(int i=0; i< [self->skipArray count]; i++){
         if([self->skipArray[i]  isEqual: @"Floors"]){
-            [self logText:@"Skipping Floors - Already inserted into healthkit"];
+            [self logText:@"Skipping Floors - Already inserted into healthkit" reset:0];
         }
     }
     
@@ -1393,7 +1394,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Present skips if needed
     for(int i=0; i< [self->skipArray count]; i++){
         if([self->skipArray[i]  isEqual: @"Steps"]){
-            [self logText:@"Skipping Steps - Already inserted into healthkit"];
+            [self logText:@"Skipping Steps - Already inserted into healthkit" reset:0];
         }
     }
     
@@ -2010,12 +2011,12 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         workout = [self GetWorkout:entry];
 
         if([self ArrayContains:[entry objectForKey:@"startTime"] routeArray:self->workoutArray]){
-            [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already installed.")];
+            [self logText:AS(AS(@"    Skipping workout `",activityName),@"` - Already installed.") reset:0];
             continue;
         }
 
         // Print activity type
-        [self logText:AS(AS(@"    Parsing workout `", activityName),@"`.")];
+        [self logText:AS(AS(@"    Parsing workout `", activityName),@"`.") reset:0];
 
         // Add workout
         [self->workoutArray addObject:[entry objectForKey:@"startTime"]];
@@ -2288,7 +2289,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             [self generateURLS];
 
         }else{
-            [self logText:@"Too many requests, try again later..."];
+            [self logText:@"Too many requests, try again later..." reset:0];
             self->resultView.text = @"Too many requests, try again later...";
             self->ProgressBar.hidden = true;
             self->resultView.textColor = [UIColor redColor];
@@ -2304,7 +2305,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         self->progress+=self->count;
         self->ProgressBar.progress = (float)self->progress;
         
-        [self logText:@"Sync Complete"];
+        [self logText:@"Sync Complete" reset:0];
         [theTimer invalidate];
         
         self->resultView.text = @"Sync Complete";
@@ -2313,7 +2314,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         self->progress+=self->count;
         self->ProgressBar.progress = (float)self->progress;
         
-        [self logText:@"Sync Complete"];
+        [self logText:@"Sync Complete" reset:0];
         [theTimer invalidate];
         
         self->resultView.text = @"Sync Complete";
@@ -2367,12 +2368,12 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 }else{
                     self->resultView.text = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
                     NSString * output = [[@"Processing `" stringByAppendingString:type] stringByAppendingString:@"` data..."];
-                    [self logText:output];
+                    [self logText:output reset:0];
 
                     // Print out skips
                     for(int i=0; i<[self->skipArray count]; i++){
                         if([self->skipArray[i] isEqualToString: type]){
-                            [self logText:AS(AS(@"Skipping ", type),@" - Already inserted into healthkit")];
+                            [self logText:AS(AS(@"Skipping ", type),@" - Already inserted into healthkit") reset:0];
                         }
                     }
 
@@ -2395,7 +2396,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                         // Catch if failed
                         NSString * methodError = AS(AS(@"Error - Failed to find method `",methodName),@"`.");
                         NSLog(@"%@", exception);
-                        [self logText:methodError];
+                        [self logText:methodError reset:0];
                     }
                 }
             }else{
@@ -2431,7 +2432,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 self->running = 0;
                 self->resultView.textColor = [UIColor redColor];
 
-                [self logText:@"Too many requests, try again later..."];
+                [self logText:@"Too many requests, try again later..." reset:0];
                 self->resultView.textColor = [UIColor redColor];
                 self->resultView.text = @"Too many requests, try again later...";
                 self->ProgressBar.hidden = true;
@@ -2462,9 +2463,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             NSRunLoop *runloop = [NSRunLoop currentRunLoop];
             [runloop addTimer:self->timer forMode:NSDefaultRunLoopMode];
         }else{
-            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
             self->ProgressBar.hidden = true;
-            [defaults setValue:@"Sync Started...\nToo many requests, try again later..." forKey:@"OutputLog"];
+            [self logText:@"Sync Started...\nToo many requests, try again later..." reset:1];
             self->running = 0;
         }
     });
@@ -2495,14 +2495,14 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         [defaults setValue:@"" forKey:@"OutputLog"];
         
-        [self logText:@"Sync Started..."];
+        [self logText:@"Sync Started..." reset:0];
         self->running = 1;
     }
     
     // Check if internet available
     BOOL isNetworkAvailable = [self checkNetConnection];
     if (!isNetworkAvailable) {
-        [self logText:@"Please check your internet connection"];
+        [self logText:@"Please check your internet connection" reset:0];
         [self showAlert:@"Please check your internet connection"];
         return;
     }
@@ -2520,7 +2520,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     }else{
         self->apiNoRequests = 1;
         self->ProgressBar.hidden = true;
-        [self logText:@"Too many requests, try again later..."];
+        [self logText:@"Too many requests, try again later..." reset:0];
         self->resultView.text = @"Too many requests, try again later...";
         self->resultView.textColor = [UIColor redColor];
         self->running = 0;
@@ -2529,7 +2529,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
     if(self->apiNoRequests == 1){
         self->ProgressBar.hidden = true;
-        [self logText:@"Too many requests, try again later..."];
+        [self logText:@"Too many requests, try again later..." reset:0];
         self->resultView.text = @"Too many requests, try again later...";
         self->resultView.textColor = [UIColor redColor];
         self->running = 0;
@@ -2590,7 +2590,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                                         completion:^(BOOL success, NSError * _Nullable error) {
 
         if(error){
-            [self logText:error];
+            [self logText:error reset:0];
         }else{
             NSInteger errorCount = 0;
 
@@ -2691,7 +2691,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
             if(errorCount != 0){
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [self logText:@"Please go to the Apple Health app, and give access to all the types."];
+                    [self logText:@"Please go to the Apple Health app, and give access to all the types." reset:0];
                     self->resultView.text = @"Please go to the Apple Health app, and give access to all the types.";
                     self->resultView.textColor = [UIColor redColor];
                     self->isRed = 1;
@@ -2743,7 +2743,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     NSString *token = [FitbitAuthHandler getToken];
     if (token != nil){
         [fitbitAuthHandler  revokeAccessToken:token];
-        [self logText:@"Please press login to authorize"];
+        [self logText:@"Please press login to authorize" reset:0];
         resultView.text = @"Please press login to authorize";
     }
 }
