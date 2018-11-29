@@ -436,7 +436,9 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array1 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
-            
+
+            NSLog(@"%ld", (long)count);
+
             if(count != 0){
                 [self->skipArray addObject:@"steps"];
                 [self->skipArray addObject:@"steps"];
@@ -913,9 +915,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Create quantity type
         weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
 
-        // Update bmi to mysql
-        [self UpdateSQL:[day objectForKey:@"value"] type:@"Bmi" date1:[day objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[day objectForKey:@"dateTime"]];
-
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Bmi" date:DateStitch extra:nil];
         weightSample = [HKQuantitySample quantitySampleWithType:weightType quantity:weightQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
@@ -958,9 +957,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
         // Create quantity type
         weightQuantity = [HKQuantity quantityWithUnit:unit doubleValue:weight];
-
-        // Update weight to mysql
-        [self UpdateSQL:[day objectForKey:@"value"] type:@"Weight" date1:[day objectForKey:@"dateTime"] insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:[day objectForKey:@"dateTime"]];
 
         // Create sample and add to sample array
         metadata = [self ReturnMetadata:@"Weight" date:DateStitch extra:nil];
@@ -1027,9 +1023,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Carbs
     if(carbs != 0)
     {
-        // Update carbs to mysql
-        [self UpdateSQL:[summary objectForKey:@"carbs"] type:@"Carbs" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
-        metadata = [self ReturnMetadata:@"Carbs" date:DateStitch extra:nil];
         HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:carbsSample];
     }
@@ -1037,9 +1030,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Fat
     if(fat != 0)
     {
-        // Update fat to mysql
-        [self UpdateSQL:[summary objectForKey:@"fat"] type:@"Fat" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
-        metadata = [self ReturnMetadata:@"Fat" date:DateStitch extra:nil];
         HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:fatSample];
     }
@@ -1047,9 +1037,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Fiber
     if(fiber != 0)
     {
-        // Update fiber to mysql
-        [self UpdateSQL:[summary objectForKey:@"fiber"] type:@"Fiber" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
-        metadata = [self ReturnMetadata:@"Fiber" date:DateStitch extra:nil];
         HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:fiberSample];
     }
@@ -1057,9 +1044,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Protein
     if(protein != 0)
     {
-        // Update protein to mysql
-        [self UpdateSQL:[summary objectForKey:@"protein"] type:@"Protein" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
-        metadata = [self ReturnMetadata:@"Protein" date:DateStitch extra:nil];
         HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:proteinSample];
     }
@@ -1067,9 +1051,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     //Sodium
     if(sodium != 0)
     {
-        // Update sodium to mysql
-        [self UpdateSQL:[summary objectForKey:@"sodium"] type:@"Sodium" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
-        metadata = [self ReturnMetadata:@"Sodium" date:DateStitch extra:nil];
         HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
@@ -1172,7 +1153,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         HKQuantitySample * waterSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime1 endDate:dateTime2 device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
         if(value != 0){
-            [self UpdateSQL:[entry objectForKey:@"value"] type:@"Water" date1:date insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:date];
             [waterArray addObject:waterSample];
         }
     }
@@ -1221,10 +1201,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Update
         HKQuantity *restingHRquality = [HKQuantity quantityWithUnit:bpmd doubleValue:restingHR];
         HKQuantitySample * hrRestingSample = [HKQuantitySample quantitySampleWithType:restingtype quantity:restingHRquality startDate:dateTime1 endDate:dateTime3];
-
-        // Update
-        [self UpdateSQL:[block2 objectForKey:@"restingHeartRate"] type:@"RestingHR" date1:[self convertStringtoDate:dateTime1] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertStringtoDate:dateTime3]];
-
         
         // Insert into healthkit and return response error or success
         [hkstore saveObject:hrRestingSample withCompletion:^(BOOL success, NSError *error){
@@ -1336,30 +1312,10 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         }
         count+=1;
     }
-    
-    // Add sample
-    [self UpdateSQL:output type:@"Floors" date1:currentDate insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:currentDate];
 
     // Flush
     output = @"";
         
-}
-
-// SQL method to update
-- (void) UpdateSQL: (NSString *) value type:(NSString *) entity date1:(NSString *)date1 insertTimestamp:(NSNumber *) timestamp time1:(NSString *) time1 time2:(NSString *) time2 date2:(NSString *) date2
-{
-    // If date2 and time2 isnt used copy date and time to date2 and time2
-    if(([date2  isEqual: @""] || date2 == nil) && ([time2  isEqual: @""] || time2 == nil)){
-        date2 = date1;
-        time2 = time1;
-    }
-    
-    NSString *url = [NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/update.php?entity=%@&date=%@&value=%@&uid=%@&timestamp=%@&time=%@&date2=%@&time2=%@", entity, date1, value, self->userid, [timestamp stringValue], time1,date2,time2];
-
-    NSString * encodeURL = [url stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-    //NSLog(@"%@", encodeURL); //debug
-    NSURL* url2 = [NSURL URLWithString:encodeURL];
-    [NSData dataWithContentsOfURL:url2];
 }
 
 // Steps
@@ -1436,9 +1392,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         }
         count+=1;
     }
-    
-    // Add sample
-    [self UpdateSQL:output type:@"Steps" date1:currentDate insertTimestamp:@0 time1:@"12:00:00" time2:@"12:00:00" date2:currentDate];
     
     // Flush
     output = @"";
@@ -1776,9 +1729,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         NSDictionary * metadata =
         @{HKMetadataKeySyncIdentifier: identifer,
           HKMetadataKeySyncVersion: nowEpochSeconds};
-
-        //Update
-        [self UpdateSQL:@"0" type:@"Sleep" date1:[self convertDateTimetoString:startDate] insertTimestamp:@0 time1:@"0" time2:@"0" date2:[self convertDateTimetoString:endDate]];
 
         // Get start and end of sleep
         HKCategorySample * sleepSample = [HKCategorySample categorySampleWithType:sleepType value:HKCategoryValueSleepAnalysisInBed startDate:startDate endDate:endDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
@@ -2270,7 +2220,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         if(![self->userid isEqual: @""]){
             // Initial historic data install using userid only once
             if([self isInstalled] == 0){
-                [self InstallHistoricData];
+                //[self InstallHistoricData]; //Add in future release using icloud to store data rather than sql
             }
 
             self->running = 1;
