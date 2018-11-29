@@ -852,25 +852,35 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 {
     NSString * locale = self->locale;
     NSString * unitType;
-    
-    // en_GB
+
     if([locale isEqual: @"en_GB"]){
+        // en_GB locale
         if([type isEqual: @"Water"]){ unitType=@"ml"; } // Water Consumed - ML
         if([type isEqual: @"Calories"]){ unitType=@"cal"; } // Calories Consumed - Calories
         if([type isEqual:@"Nutrients"]){ unitType=@"g"; } // Nutrients Consumed - Grams
         if([type isEqual: @"Weight"]){ unitType=@"st"; } // Weight - Stones
         if([type isEqual: @"Steps"]){ unitType=@"count"; } // Steps
         if([type isEqual: @"Floors"]){ unitType=@"count"; } // Floors
+        if([type isEqual: @"BMI"]){ unitType=@"count"; } // BMI
         
     }else if([locale isEqual: @"en_US"]){
+        // en_US locale
         if([type isEqual: @"Water"]){ unitType=@"fl_oz_us"; } // Water Consumed - ML
         if([type isEqual: @"Calories"]){ unitType=@"cal"; } // Calories Consumed - Calories
         if([type isEqual:@"Nutrients"]){ unitType=@"g"; } // Nutrients Consumed - Grams
         if([type isEqual: @"Weight"]){ unitType=@"lb"; } // Weight - Pounds
         if([type isEqual: @"Steps"]){ unitType=@"count"; } // Steps
         if([type isEqual: @"Floors"]){ unitType=@"count"; } // Floors
+        if([type isEqual: @"BMI"]){ unitType=@"count"; } // BMI
     }else{
-        unitType = @"count"; //BMI
+        // Metric values for other locales
+        if([type isEqual: @"Water"]){ unitType=@"ml"; } // Water Consumed - ML
+        if([type isEqual: @"Calories"]){ unitType=@"cal"; } // Calories Consumed - Calories
+        if([type isEqual:@"Nutrients"]){ unitType=@"g"; } // Nutrients Consumed - Grams
+        if([type isEqual: @"Weight"]){ unitType=@"kg"; } // Weight - Pounds
+        if([type isEqual: @"Steps"]){ unitType=@"count"; } // Steps
+        if([type isEqual: @"Floors"]){ unitType=@"count"; } // Floors
+        if([type isEqual: @"BMI"]){ unitType=@"count"; } // BMI
     }
     
     return [HKUnit unitFromString:unitType];
@@ -1901,8 +1911,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         distance = 0;
         totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
     }else{
-        // EN_GB is kilometers, convert to miles for standardization
-        if([locale  isEqual: @"en_GB"]){
+        // EN_GB and other locales use kilometers, convert to miles for standardization
+        if(![locale isEqual: @"en_US"]){
             double conv = 0.621371;
             distance = (distance * conv);
         }
@@ -1912,7 +1922,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Lap Length
     if([entry objectForKey:@"poolLength"] != nil){
         double poolLength = [[entry objectForKey:@"poolLength"] doubleValue];
-        HKQuantity * poolLengthTotal = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:poolLength];
+        HKQuantity * poolLengthTotal = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:poolLength];
         [MetaOptions setObject:poolLengthTotal forKey:HKMetadataKeyLapLength];
     }
 
