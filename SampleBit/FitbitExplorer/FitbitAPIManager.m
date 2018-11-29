@@ -24,6 +24,10 @@
     return _sharedManager;
 }
 
+-(void)requestGETBackground:(NSString *)strURL Token:(NSString *)token{
+
+}
+
 -(void)requestGET:(NSString *)strURL xml:(BOOL)xml Token:(NSString *)token success:(void (^)(NSDictionary *responseObject))success failure:(void (^)(NSError *error))failure {
     
     BOOL isNetworkAvailable = [self checkNetConnection];
@@ -36,6 +40,7 @@
  
         AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
         [manager.requestSerializer setValue:[NSString stringWithFormat:@"Bearer %@",token] forHTTPHeaderField:@"Authorization"];
+        //[manager.requestSerializer setValue:@"en_US" forHTTPHeaderField:@"Accept-Language"];
         
         if(xml){
             // Content xml

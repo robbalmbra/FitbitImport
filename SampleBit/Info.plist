@@ -65,6 +65,13 @@
 	</array>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Detecting if bluetooth is on to connect to the fitbit</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict/>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

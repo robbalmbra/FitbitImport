@@ -34,6 +34,7 @@
     __block BOOL nutrientsSwitch;
     __block BOOL weightSwitch;
     __block NSString *userid;
+    __block NSString *locale;
     __block HKHealthStore *hkstore;
     __block NSString *tcxLink;
     __block BOOL isRed;
@@ -430,7 +431,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKSampleType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
-        HKUnit *unit = [HKUnit countUnit];
+        
+        HKUnit *unit = [self getUnit:@"Steps"];
         
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array1 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
@@ -441,7 +443,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
-
+            
             // Insert into array
             for(int i=0; i<[dataArray count]; i++){
                 [self->urlArray addObject:dataArray[i]];
@@ -465,7 +467,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKSampleType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
-        HKUnit *unit = [HKUnit countUnit];
+        HKUnit *unit = [self getUnit:@"Floors"];
         
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array2 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
@@ -499,7 +501,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned];
-        HKUnit *unit = [HKUnit unitFromString:@"cal"];
+        HKUnit *unit = [self getUnit:@"Calories"];
         
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array3 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
@@ -519,7 +521,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             self->typeCount +=1;
         }];
     }
-    
+
     ////////////////////////////////////////////// Weight/BMI /////////////////////////////////////////////////////
     if(self->weightSwitch){
         self->typeCountCheck += 1;
@@ -531,11 +533,11 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             entity = [NSString stringWithFormat:@"weight"];
             [array4 addObject:[NSMutableArray arrayWithObjects:url,entity,dateNow,nil]];
         }
-        
+
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
-        HKUnit *unit = [HKUnit unitFromString:@"kg"];
-        
+        HKUnit *unit = [self getUnit:@"Weight"];
+
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array4 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             if(count != 0){
@@ -544,16 +546,16 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
-            
+
             // Insert into array
             for(int i=0; i<[dataArray count]; i++){
                 [self->urlArray addObject:dataArray[i]];
             }
-            
+
             // Increase count
             self->typeCount +=1;
         }];
-        
+
         self->typeCountCheck += 1;
         NSMutableArray *array5 = [[NSMutableArray alloc] init];
         for(int i=0; i<Days; i++){
@@ -562,11 +564,11 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             entity = [NSString stringWithFormat:@"bmi"];
             [array5 addObject:[NSMutableArray arrayWithObjects:url,entity,dateNow,nil]];
         }
-        
+
         // Check healthkit for duplicate data
         HKSampleType *sampleType2 = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex];
-        HKUnit *unit2 = [HKUnit countUnit];
-        
+        HKUnit *unit2 = [self getUnit:@"BMI"];
+
         // Query and return
         [self countPoints:sampleType2 unit:unit2 dateArray:array5 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
             if(count != 0){
@@ -575,12 +577,12 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 [dataArray removeObjectAtIndex:2];
                 [dataArray removeObjectAtIndex:1];
             }
-            
+
             // Insert into array
             for(int i=0; i<[dataArray count]; i++){
                 [self->urlArray addObject:dataArray[i]];
             }
-            
+
             // Increase count
             self->typeCount +=1;
         }];
@@ -596,19 +598,19 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             NSString *dateNow = [self calcDate:i];
             [array5 addObject:[NSMutableArray arrayWithObjects:entity,dateNow,nil]];
         }
-        
+
         // Check healthkit for duplicate data
         HKSampleType *sampleType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
-        HKUnit * unit= [HKUnit unitFromString:@"ml"];
-        
+        HKUnit * unit = [self getUnit:@"Water"];
+
         __block NSDate *startDate;
         __block NSDate *endDate;
-        
+
         [self countSinglePoints:sampleType unit:unit dataArray:array5 completion:^(NSInteger count, NSMutableArray *data, NSError *error) {
-            
+
             // Entity
             NSString * entity = array5[0][0];
-            
+
             if(count != 0){
                 [self->skipArray addObject:@"water"];
                 [self->skipArray addObject:@"water"];
@@ -621,10 +623,9 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 startDate = array5[2][1];
                 endDate = array5[0][1];
             }
-            
+
             // Add to array
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/water/date/%@/%@.json",startDate, endDate];
-            
             [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
 
             // Increase count
@@ -847,9 +848,32 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     return meta;
 }
 
-- (void) ProcessTest: (NSDictionary *) jsonData
+- (HKUnit *) getUnit:( NSString *) type
 {
-    //printf("%s",[[jsonData description] UTF8String]);
+    NSString * locale = self->locale;
+    NSString * unitType;
+    
+    // en_GB
+    if([locale isEqual: @"en_GB"]){
+        if([type isEqual: @"Water"]){ unitType=@"ml"; } // Water Consumed - ML
+        if([type isEqual: @"Calories"]){ unitType=@"cal"; } // Calories Consumed - Calories
+        if([type isEqual:@"Nutrients"]){ unitType=@"g"; } // Nutrients Consumed - Grams
+        if([type isEqual: @"Weight"]){ unitType=@"st"; } // Weight - Stones
+        if([type isEqual: @"Steps"]){ unitType=@"count"; } // Steps
+        if([type isEqual: @"Floors"]){ unitType=@"count"; } // Floors
+        
+    }else if([locale isEqual: @"en_US"]){
+        if([type isEqual: @"Water"]){ unitType=@"fl_oz_us"; } // Water Consumed - ML
+        if([type isEqual: @"Calories"]){ unitType=@"cal"; } // Calories Consumed - Calories
+        if([type isEqual:@"Nutrients"]){ unitType=@"g"; } // Nutrients Consumed - Grams
+        if([type isEqual: @"Weight"]){ unitType=@"lb"; } // Weight - Pounds
+        if([type isEqual: @"Steps"]){ unitType=@"count"; } // Steps
+        if([type isEqual: @"Floors"]){ unitType=@"count"; } // Floors
+    }else{
+        unitType = @"count"; //BMI
+    }
+    
+    return [HKUnit unitFromString:unitType];
 }
 
 - (void) ProcessBmi:( NSDictionary *) jsonData
@@ -861,7 +885,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     NSMutableArray *sampleArray = [NSMutableArray array];
 
     // Healthkit unit and type declarations
-    HKUnit *unit = [HKUnit unitFromString:@"count"];
+    HKUnit * unit = [self getUnit:@"BMI"];
     HKQuantityType *weightType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex];
     HKQuantity *weightQuantity;
     HKQuantitySample * weightSample;
@@ -906,7 +930,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     NSMutableArray *sampleArray = [NSMutableArray array];
     
     // Healthkit unit and type declarations
-    HKUnit *unit = [HKUnit unitFromString:@"kg"];
+    HKUnit * unit = [self getUnit:@"Weight"];
     HKQuantityType *weightType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass];
     HKQuantity *weightQuantity;
     HKQuantitySample * weightSample;
@@ -945,6 +969,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 // Get nutrient details
 - (void) ProcessNutrients:( NSDictionary *) jsonData
 {
+
     // Get Date
     __block NSString * date;
     NSMutableDictionary *metadata;
@@ -973,7 +998,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     double sodium = [[summary objectForKey:@"sodium"] doubleValue];
 
     // Retrieve types
-    HKUnit *unit = [HKUnit unitFromString:@"g"];
+    HKUnit *unit = [self getUnit:@"Nutrients"];
+
     HKQuantityType *carbsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCarbohydrates];
     HKQuantityType *fatType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFatTotal];
     HKQuantityType *fiberType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFiber];
@@ -1064,7 +1090,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     NSArray *out3 = [out2 objectForKey:@"dataset"];
 
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierActiveEnergyBurned];
-    HKUnit *energy = [HKUnit unitFromString:@"cal"];
+    HKUnit * unit = [self getUnit:@"Calories"];
 
     for(NSDictionary * entry in out3){
         double value = [[entry objectForKey:@"value"] doubleValue];
@@ -1082,7 +1108,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
           HKMetadataKeySyncVersion: nowEpochSeconds};
 
         // Create sample
-        HKQuantity *quantity = [HKQuantity quantityWithUnit:energy doubleValue:value];
+        HKQuantity *quantity = [HKQuantity quantityWithUnit:unit doubleValue:value];
         HKQuantitySample * calSample = [HKQuantitySample quantitySampleWithType:quantityType quantity:quantity startDate:dateTime endDate:dateTime device:[self ReturnDeviceInfo:nil] metadata:metadata];
 
         // Add sample to array
@@ -1105,7 +1131,10 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
     // Create type
     HKQuantityType *quantityType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryWater];
-    HKUnit *waterday = [HKUnit unitFromString:@"ml"];
+    
+    HKUnit *waterday =[self getUnit:@"Water"];
+    
+    //HKUnit *waterday = [HKUnit unitFromString:@"ml"];
 
     // Iterate over data
     NSArray * out = [jsonData objectForKey:@"foods-log-water"];
@@ -1236,7 +1265,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierFlightsClimbed];
     
     // Define unit
-    HKUnit *floorUnit = [HKUnit unitFromString:@"count"];
+    HKUnit *unit = [self getUnit:@"Floors"];
     
     // Retrieve date
     NSArray * out = [jsonData objectForKey:@"activities-floors"];
@@ -1282,7 +1311,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
             
             // Create Sample
             metadata = [self ReturnMetadata:@"Floors" date:[self convertStringtoDate:startDateTime] extra:nil];
-            quantity = [HKQuantity quantityWithUnit:floorUnit doubleValue:floorCount];
+            quantity = [HKQuantity quantityWithUnit:unit doubleValue:floorCount];
             
             floorSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:startDateTime endDate:endDateTime metadata:metadata];
             
@@ -1337,7 +1366,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     HKQuantityType *stepType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
     
     // Define unit
-    HKUnit *stepUnit = [HKUnit unitFromString:@"count"];
+    HKUnit * unit = [self getUnit:@"Steps"];
 
     // Retrieve date
     NSArray * out = [jsonData objectForKey:@"activities-steps"];
@@ -1383,7 +1412,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
             // Create Sample
             metadata = [self ReturnMetadata:@"Steps" date:[self convertStringtoDate:startDateTime] extra:nil];
-            quantity = [HKQuantity quantityWithUnit:stepUnit doubleValue:stepCount];
+            quantity = [HKQuantity quantityWithUnit:unit doubleValue:stepCount];
             stepSample = [HKQuantitySample quantitySampleWithType:stepType quantity:quantity startDate:startDateTime endDate:endDateTime metadata:metadata];
             
             // Insert into healthkit and return response error or success
@@ -1870,11 +1899,14 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     double distance = [[entry objectForKey:@"distance"] doubleValue];
     if([entry objectForKey:@"distance"]  == nil){
         distance = 0;
-        totalDistance = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:distance];
+        totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
     }else{
-        double conv = 0.621371;
-        distance = (distance * conv);
-        totalDistance = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:distance];
+        // EN_GB is kilometers, convert to miles for standardization
+        if([locale  isEqual: @"en_GB"]){
+            double conv = 0.621371;
+            distance = (distance * conv);
+        }
+        totalDistance = [HKQuantity quantityWithUnit:[HKUnit mileUnit] doubleValue:distance];
     }
 
     // Lap Length
@@ -2180,6 +2212,10 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Copy userid from NSUserDefaults if exits
         NSUserDefaults *data = [NSUserDefaults standardUserDefaults];
         self->userid = [data objectForKey:@"userid"];
+        
+        // Copy locale from NSUserDefaults if exists
+        self->locale = [data objectForKey:@"locale"];
+        
         dispatch_group_leave(group);
     }else{
         // Get userid from URL
@@ -2189,13 +2225,16 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         NSString * url = @"https://api.fitbit.com/1/user/-/profile.json";
         [manager requestGET:url xml:0 Token:token success:^(NSDictionary *responseObject) {
 
-            // Get user id
+            // Get user id and locale
             NSDictionary * data = [responseObject objectForKey:@"user"];
             NSString * userid = [data objectForKey:@"encodedId"];
+            NSString * locale = [data objectForKey:@"locale"];
             self->userid = userid;
+            self->locale = locale;
             
             // Set id in NSUSERDEFAULTS for future use
             [[NSUserDefaults standardUserDefaults] setValue:userid forKey:@"userid"];
+            [[NSUserDefaults standardUserDefaults] setValue:locale forKey:@"locale"];
             
             // Leave
             dispatch_group_leave(group);
@@ -2277,7 +2316,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
     // Create dispatch block
     dispatch_group_t group = dispatch_group_create();
-    
     
     self->foundWorkout = 0;
     __block NSMutableArray * prevTypes = [[NSMutableArray alloc] init];
