@@ -45,6 +45,7 @@
     __block NSInteger nearestHour;
     __block NSString * distance;
     __block NSMutableArray * workoutArray;
+    __block NSMutableArray * nutrientsArray;
     __block NSMutableArray * sleepArray;
     __block NSInteger running;
     __block int workoutComplete;
@@ -90,6 +91,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     
     //Define array if ns array is not set
     self->workoutArray = [NSMutableArray new];
+    self->nutrientsArray = [NSMutableArray new];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -687,20 +689,32 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         entity = [NSString stringWithFormat:@"workout"];
         [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
     }
-    
+
     // Convert to async below - TODO
-    
+
     ///////////////////////////////////////////////// Food properties /////////////////////////////////////////////
     if(self->nutrients){
         for(int i=0; i<Days; i++){
             NSString *dateNow = [self calcDate:i];
-            
+
+            // Once run once per session
+            if(i != 0){
+
+                // Skip processing if in loop
+                if([self ArrayContains:dateNow routeArray:self->nutrientsArray]){
+                    [self->skipArray addObject:@"nutrients"];
+                    continue;
+                }
+
+                [self->nutrientsArray addObject:dateNow];
+            }
+
             url = [NSString stringWithFormat:@"https://api.fitbit.com/1/user/-/foods/log/date/%@.json",dateNow];
             entity = [NSString stringWithFormat:@"nutrients"];
             [self->urlArray addObject:[NSMutableArray arrayWithObjects:url,entity,nil]];
         }
     }
-    
+
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     if(self->heartRateSwitch){
         for(int i=0; i<Days; i++){
@@ -976,7 +990,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 // Get nutrient details
 - (void) ProcessNutrients:( NSDictionary *) jsonData
 {
-
     // Get Date
     __block NSString * date;
     NSMutableDictionary *metadata;
@@ -2009,9 +2022,9 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
                                 // Timestamp
                                 NSDate * timestamp = [self convertDateTimeZ:[[latlong objectForKey:@"Time"] objectForKey:@"text"]];
-                                
-                                
+
                                 double HeartRateBpm = [[[[latlong objectForKey:@"HeartRateBpm"] objectForKey:@"Value"] objectForKey:@"text"] doubleValue];
+                                
                                 HeartRateTotal += HeartRateBpm;
                                 
                                 HKQuantity *quantity = [HKQuantity quantityWithUnit:bpm doubleValue:HeartRateBpm];
@@ -2274,7 +2287,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
-
+    
     // Create dispatch block
     dispatch_group_t group = dispatch_group_create();
     
