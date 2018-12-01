@@ -439,8 +439,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Query and return
         [self countPoints:sampleType unit:unit dateArray:array1 completion:^(NSInteger count, NSMutableArray * dataArray, NSError *error) {
 
-            NSLog(@"%ld", (long)count);
-
             if(count != 0){
                 [self->skipArray addObject:@"steps"];
                 [self->skipArray addObject:@"steps"];
@@ -1004,7 +1002,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     @catch (NSException *exception){
         return;
     }
-
+    
     // Start date and stop date
     NSString * DateStitch = AS(date,@" 12:00:00");
     NSDate * sampleDate = [self stitchDateTime:DateStitch];
@@ -2041,6 +2039,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                                 [routeArray addObject:test];
                             }
                             
+                            NSLog(@"%lu %lu", (unsigned long)[routeArray count], (unsigned long)[heartArray count]);
+                            
                             if([heartArray count] == 0 && [routeArray count] == 0){
                                 dispatch_group_leave(group2);
                             }else if([heartArray count] == 0){
@@ -2264,30 +2264,31 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 - (void)timerCallback:(NSTimer*)theTimer
 {
     if(self->foundWorkout == 1 && self->workoutComplete == 1){
-        
         self->progress+=self->count;
         self->ProgressBar.progress = (float)self->progress;
-        
+
         [self logText:@"Sync Complete" reset:0];
         [theTimer invalidate];
-        
+
+        self->resultView.text = @"Sync Complete";
+        self->running = 0;
+    }else if(self->foundWorkout == 0){
+        self->progress+=self->count;
+        self->ProgressBar.progress = (float)self->progress;
+
+        [self logText:@"Sync Complete" reset:0];
+        [theTimer invalidate];
+
         self->resultView.text = @"Sync Complete";
         self->running = 0;
     }else{
-        self->progress+=self->count;
-        self->ProgressBar.progress = (float)self->progress;
-        
-        [self logText:@"Sync Complete" reset:0];
-        [theTimer invalidate];
-        
-        self->resultView.text = @"Sync Complete";
-        self->running = 0;
+        // do nothing
     }
 }
 
 // Pass URL and return json from fitbit API
 -(void)getFitbitURL{
-    
+
     // Create dispatch block
     dispatch_group_t group = dispatch_group_create();
     
@@ -2296,6 +2297,13 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     
     // Iterate over URLS
     NSMutableArray *URLS = self->urlArray;
+    
+    for(NSMutableArray *testEnt in URLS){
+        if([testEnt[1] isEqual:@"workout"]){
+            self->foundWorkout = 1;
+        }
+    }
+    
     for (NSMutableArray *entity in URLS){
         
         if(self->apiNoRequests == 1){
@@ -2305,11 +2313,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         // Retrieve url and activity type
         NSString *url = entity[0];
         __block NSString *type = entity[1];
-        
-        if([type  isEqual: @"workout"]){
-            self->foundWorkout = 1;
-        }
-        
+
         // Enter group
         dispatch_group_enter(group);
 
