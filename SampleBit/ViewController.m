@@ -1233,6 +1233,56 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                             [nutrientsArray addObject:ironSample];
                         }
                         
+                        // Write Copper to healthkit
+                        double copper = ([[[out5 objectForKey:@"Copper"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *copperType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCopper];
+                        HKQuantity *copperQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:copper];
+                        if(copper != 0){
+                            metadata = [self ReturnMetadata:@"Copper" date:DateStitch extra:nil];
+                            HKQuantitySample * copperSample = [HKQuantitySample quantitySampleWithType:copperType quantity:copperQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:copperSample];
+                        }
+                        
+                        // Write Pantothenic Acid to healthkit
+                        double pantothenic = ([[[out5 objectForKey:@"Pantothenic Acid"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *pantothenicType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid];
+                        HKQuantity *pantothenicQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:pantothenic];
+                        if(pantothenic != 0){
+                            metadata = [self ReturnMetadata:@"Pantothenic" date:DateStitch extra:nil];
+                            HKQuantitySample * pantothenicSample = [HKQuantitySample quantitySampleWithType:pantothenicType quantity:pantothenicQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:pantothenicSample];
+                        }
+                        
+                        // Write iodine to healthkit
+                        double iodine = ([[[out5 objectForKey:@"Iodine"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *iodineType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid];
+                        HKQuantity *iodineQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:iodine];
+                        if(iodine != 0){
+                            metadata = [self ReturnMetadata:@"Iodine" date:DateStitch extra:nil];
+                            HKQuantitySample * iodineSample = [HKQuantitySample quantitySampleWithType:iodineType quantity:iodineQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:iodineSample];
+                        }
+                        
+                        // Write magnesium to healthkit
+                        double magnesium = ([[[out5 objectForKey:@"Magnesium"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *magnesiumType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid];
+                        HKQuantity *magnesiumQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:magnesium];
+                        if(magnesium != 0){
+                            metadata = [self ReturnMetadata:@"Magnesium" date:DateStitch extra:nil];
+                            HKQuantitySample * magnesiumSample = [HKQuantitySample quantitySampleWithType:magnesiumType quantity:magnesiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:magnesiumSample];
+                        }
+                        
+                        // Folic Acid to healthkit
+                        double folic = ([[[out5 objectForKey:@"Folic Acid"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *folicType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid];
+                        HKQuantity *folicQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:folic];
+                        if(folic != 0){
+                            metadata = [self ReturnMetadata:@"Folic" date:DateStitch extra:nil];
+                            HKQuantitySample * folicSample = [HKQuantitySample quantitySampleWithType:folicType quantity:folicQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:folicSample];
+                        }
+                        
                         // Write to healthkit
                         [self->hkstore saveObjects:nutrientsArray withCompletion:^(BOOL success, NSError *error){
                             //NSLog(@"%@", error);
@@ -2720,7 +2770,18 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminC],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminD],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminE],
-                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron]
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminB6],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminB12],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryThiamin],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCopper],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryBiotin],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryNiacin],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryRiboflavin],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryMagnesium],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIodine],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFolate]
                             ];
     
     NSArray *readTypes = @[
@@ -2748,7 +2809,18 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminC],
                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminD],
                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminE],
-                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron]
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminB6],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminB12],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryThiamin],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCopper],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryBiotin],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryNiacin],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryRiboflavin],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryMagnesium],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIodine],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFolate]
                            ];
     
     
@@ -2879,6 +2951,61 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 HKObjectType *iron = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron];
                 HKAuthorizationStatus ironStatus = [self->hkstore authorizationStatusForType:iron];
                 errorCount += [self checktype:ironStatus];
+                
+                // Biotin
+                HKObjectType *biotin = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryBiotin];
+                HKAuthorizationStatus biotinStatus = [self->hkstore authorizationStatusForType:biotin];
+                errorCount += [self checktype:biotinStatus];
+                
+                // Thiamin
+                HKObjectType *thiamin = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryThiamin];
+                HKAuthorizationStatus thiaminStatus = [self->hkstore authorizationStatusForType:thiamin];
+                errorCount += [self checktype:thiaminStatus];
+                
+                // Niacin
+                HKObjectType *niacin = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryNiacin];
+                HKAuthorizationStatus niacinStatus = [self->hkstore authorizationStatusForType:niacin];
+                errorCount += [self checktype:niacinStatus];
+                
+                // Riboflavin
+                HKObjectType *riboflavin = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryRiboflavin];
+                HKAuthorizationStatus riboflavinStatus = [self->hkstore authorizationStatusForType:riboflavin];
+                errorCount += [self checktype:riboflavinStatus];
+                
+                // Folic Acid
+                HKObjectType *folic = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryFolate];
+                HKAuthorizationStatus folicStatus = [self->hkstore authorizationStatusForType:folic];
+                errorCount += [self checktype:folicStatus];
+                
+                // Magnesium
+                HKObjectType *magnesium = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryMagnesium];
+                HKAuthorizationStatus magnesiumStatus = [self->hkstore authorizationStatusForType:magnesium];
+                errorCount += [self checktype:magnesiumStatus];
+                
+                // Iodine
+                HKObjectType *iodine = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIodine];
+                HKAuthorizationStatus iodineStatus = [self->hkstore authorizationStatusForType:iodine];
+                errorCount += [self checktype:iodineStatus];
+                
+                // Copper
+                HKObjectType *copper = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCopper];
+                HKAuthorizationStatus copperStatus = [self->hkstore authorizationStatusForType:copper];
+                errorCount += [self checktype:copperStatus];
+                
+                // Pantothenic Acid
+                HKObjectType *pantothenic = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryPantothenicAcid];
+                HKAuthorizationStatus pantothenicStatus = [self->hkstore authorizationStatusForType:pantothenic];
+                errorCount += [self checktype:pantothenicStatus];
+                
+                // Vitamin B12
+                HKObjectType *vitaminB12 = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminB12];
+                HKAuthorizationStatus vitaminB12Status = [self->hkstore authorizationStatusForType:vitaminB12];
+                errorCount += [self checktype:vitaminB12Status];
+
+                // Vitamin B6
+                HKObjectType *vitaminB6 = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminB6];
+                HKAuthorizationStatus vitaminB6Status = [self->hkstore authorizationStatusForType:vitaminB6];
+                errorCount += [self checktype:vitaminB6Status];
             }
             
             if(self->distanceSwitch){
