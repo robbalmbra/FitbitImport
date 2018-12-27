@@ -49,6 +49,7 @@
     __block NSMutableArray * sleepArray;
     __block NSInteger running;
     __block int workoutComplete;
+    __block int nutrientsComplete;
     __block NSTimer * timer;
     __block double count;
     __block double progress;
@@ -60,6 +61,7 @@
     __block NSMutableArray *urlArray;
     __block NSMutableArray *skipArray;
     __block BOOL foundWorkout;
+    __block BOOL foundnutrients;
 }
 
 #define AS(A,B)    [(A) stringByAppendingString:(B)]
@@ -713,6 +715,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
         }
     }
 
+    //NSLog(@"%@", self->urlArray);
+    
     ////////////////////////////////////////////// Get heart rate data /////////////////////////////////////////////
     if(self->heartRateSwitch){
         for(int i=0; i<Days; i++){
@@ -988,6 +992,8 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
 // Get nutrient details
 - (void) ProcessNutrients:( NSDictionary *) jsonData
 {
+    NSMutableArray *foodIds = [NSMutableArray array];
+    
     // Get Date
     __block NSString * date;
     NSMutableDictionary *metadata;
@@ -995,6 +1001,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Define sample array
     NSMutableArray *sampleArray = [NSMutableArray array];
 
+    // Check if data available
     @try {
         NSArray * block = [jsonData objectForKey:@"foods"];
         date = [block[0] objectForKey:@"logDate"];
@@ -1002,7 +1009,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     @catch (NSException *exception){
         return;
     }
-    
+
     // Start date and stop date
     NSString * DateStitch = AS(date,@" 12:00:00");
     NSDate * sampleDate = [self stitchDateTime:DateStitch];
@@ -1034,6 +1041,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Carbs
     if(carbs != 0)
     {
+        metadata = [self ReturnMetadata:@"Carbs" date:DateStitch extra:nil];
         HKQuantitySample * carbsSample = [HKQuantitySample quantitySampleWithType:carbsType quantity:carbsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:carbsSample];
     }
@@ -1041,6 +1049,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Fat
     if(fat != 0)
     {
+        metadata = [self ReturnMetadata:@"Fat" date:DateStitch extra:nil];
         HKQuantitySample * fatSample = [HKQuantitySample quantitySampleWithType:fatType quantity:fatQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:fatSample];
     }
@@ -1048,6 +1057,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Fiber
     if(fiber != 0)
     {
+        metadata = [self ReturnMetadata:@"Fiber" date:DateStitch extra:nil];
         HKQuantitySample * fiberSample = [HKQuantitySample quantitySampleWithType:fiberType quantity:fiberQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:fiberSample];
     }
@@ -1055,6 +1065,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Protein
     if(protein != 0)
     {
+        metadata = [self ReturnMetadata:@"Protein" date:DateStitch extra:nil];
         HKQuantitySample * proteinSample = [HKQuantitySample quantitySampleWithType:proteinType quantity:proteinQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:proteinSample];
     }
@@ -1062,6 +1073,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     //Sodium
     if(sodium != 0)
     {
+        metadata = [self ReturnMetadata:@"Sodium" date:DateStitch extra:nil];
         HKQuantitySample * sodiumSample = [HKQuantitySample quantitySampleWithType:sodiumType quantity:sodiumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
         [sampleArray addObject:sodiumSample];
     }
@@ -1069,9 +1081,165 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     // Update healthkit
     if([sampleArray count] > 0)
     {
-        // Add to healthkit - carbs
+        // Add to healthkit - All nutrients
         [hkstore saveObjects:sampleArray withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
+            if(error){
+                NSLog(@"%@", error);
+            }else{
+                //Get other nutrients via scrape script
+                if([jsonData objectForKey:@"foods"] != nil){
+                    if([[jsonData objectForKey:@"foods"] count] != 0){
+                        NSMutableDictionary *names = [NSMutableDictionary dictionary];
+                        NSDictionary * entities;
+                        NSMutableDictionary * out5 = [NSMutableDictionary dictionary];
+                        for(NSDictionary * entry in [jsonData objectForKey:@"foods"]){
+                            NSDictionary * loggedFood = [entry objectForKey:@"loggedFood"];
+                            NSString * foodID = [loggedFood objectForKey:@"foodId"];
+                            NSString * foodUnit = [[loggedFood objectForKey:@"unit"] objectForKey:@"id"];
+                            NSString * foodAmmount = [loggedFood objectForKey:@"amount"];
+
+                            // Retrieve nutrients
+                            NSString * urlString = [NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/getDetails.php?id=%@&sid=%@&ammount=%@",foodID, foodUnit, foodAmmount];
+                        
+                            // Get URL
+                            NSURL *url = [NSURL URLWithString:urlString];
+                            NSData *data = [[NSData alloc] initWithContentsOfURL:url];
+                            NSDictionary *s = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+
+                            // Check plurals
+                            if([s count] == 0){
+                                urlString = [NSString stringWithFormat:@"https://apple.rob-balmbra.co.uk/getDetails.php?id=%@&sid=%@&ammount=%@&plural=1",foodID, foodUnit, foodAmmount];
+                                url = [NSURL URLWithString:urlString];
+                                data = [[NSData alloc] initWithContentsOfURL:url];
+                                s = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+                            }
+
+                            NSArray * out4 = [s objectForKey:@"data"];
+
+                            for(int i=0; i<[out4 count]; i++){
+                                NSMutableDictionary * entityType = out4[i];
+                                
+                                if([[out5 objectForKey:[entityType valueForKey:@"name"]] objectForKey:@"name"] != nil && ![[entityType objectForKey:@"type"] isEqual: @"%"]){
+
+                                    NSString * bname = [[out5 objectForKey:[entityType valueForKey:@"name"]] objectForKey:@"name"];
+                                    
+                                    double currentAmmount = [[[out5 objectForKey:[entityType valueForKey:@"name"]] objectForKey:@"ammount"] doubleValue];
+                                    currentAmmount+= [[entityType objectForKey:@"ammount"] doubleValue];
+                                    
+                                    [[out5 objectForKey:bname] setValue:[NSNumber numberWithDouble: currentAmmount] forKey:@"ammount"];
+                                }else{
+                                    NSMutableDictionary *first = [NSMutableDictionary dictionary];
+                                    [first setObject:[entityType objectForKey:@"type"] forKey:@"type"];
+                                    [first setObject:[entityType objectForKey:@"name"] forKey:@"name"];
+                                    [first setObject:[entityType objectForKey:@"ammount"] forKey:@"ammount"];
+                                    [out5 setObject:first forKey:[entityType objectForKey:@"name"]];
+                                }
+                            }
+                        }
+                        
+                        NSLog(@"%@", out5);
+                        
+                        // Sample array
+                        NSMutableArray *nutrientsArray = [NSMutableArray array];
+                        NSMutableDictionary *metadata;
+                        
+                        // Write Cholesterol to healthkit
+                        double cholesterol = [[[out5 objectForKey:@"Cholesterol"] objectForKey:@"ammount"] doubleValue];
+                        HKQuantityType *cholesterolType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCholesterol];
+                        HKQuantity *cholesterolQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:cholesterol];
+                        if(cholesterol != 0){
+                            metadata = [self ReturnMetadata:@"Cholesterol" date:DateStitch extra:nil];
+                            HKQuantitySample * cholesterolSample = [HKQuantitySample quantitySampleWithType:cholesterolType quantity:cholesterolQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:cholesterolSample];
+                        }
+                        
+                        // Write Sugars to healthkit
+                        double sugars = [[[out5 objectForKey:@"Sugars"] objectForKey:@"ammount"] doubleValue];
+                        HKQuantityType *sugarsType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySugar];
+                        HKQuantity *sugarsQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"g"] doubleValue:sugars];
+                        if(sugars != 0){
+                            metadata = [self ReturnMetadata:@"Sugars" date:DateStitch extra:nil];
+                            HKQuantitySample * sugarsSample = [HKQuantitySample quantitySampleWithType:sugarsType quantity:sugarsQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:sugarsSample];
+                        }
+
+                        // Write Calcium to healthkit
+                        double calcium = ([[[out5 objectForKey:@"Calcium"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *calciumType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCalcium];
+                        HKQuantity *calciumQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:calcium];
+                        if(calcium != 0){
+                            metadata = [self ReturnMetadata:@"Calcium" date:DateStitch extra:nil];
+                            HKQuantitySample * calciumSample = [HKQuantitySample quantitySampleWithType:calciumType quantity:calciumQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:calciumSample];
+                        }
+                        
+                        // Write Zinc to healthkit
+                        double zinc = ([[[out5 objectForKey:@"Zinc"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *zincType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryZinc];
+                        HKQuantity *zincQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:zinc];
+                        if(zinc != 0){
+                            metadata = [self ReturnMetadata:@"Zinc" date:DateStitch extra:nil];
+                            HKQuantitySample * zincSample = [HKQuantitySample quantitySampleWithType:zincType quantity:zincQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:zincSample];
+                        }
+                        
+                        // Write Vitamin A to healthkit
+                        double vitaminA = ([[[out5 objectForKey:@"Vitamin A"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *vitaminAType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminA];
+                        HKQuantity *vitaminAQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:vitaminA];
+                        if(vitaminA != 0){
+                            metadata = [self ReturnMetadata:@"Vitamin A" date:DateStitch extra:nil];
+                            HKQuantitySample * vitaminASample = [HKQuantitySample quantitySampleWithType:vitaminAType quantity:vitaminAQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:vitaminASample];
+                        }
+
+                        // Write Vitamin C to healthkit
+                        double vitaminC = ([[[out5 objectForKey:@"Vitamin C"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *vitaminCType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminC];
+                        HKQuantity *vitaminCQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:vitaminC];
+                        if(vitaminC != 0){
+                            metadata = [self ReturnMetadata:@"Vitamin C" date:DateStitch extra:nil];
+                            HKQuantitySample * vitaminCSample = [HKQuantitySample quantitySampleWithType:vitaminCType quantity:vitaminCQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:vitaminCSample];
+                        }
+
+                        // Write Vitamin D to healthkit
+                        double vitaminD = ([[[out5 objectForKey:@"Vitamin D"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *vitaminDType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminD];
+                        HKQuantity *vitaminDQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:vitaminD];
+                        if(vitaminC != 0){
+                            metadata = [self ReturnMetadata:@"Vitamin D" date:DateStitch extra:nil];
+                            HKQuantitySample * vitaminDSample = [HKQuantitySample quantitySampleWithType:vitaminDType quantity:vitaminDQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:vitaminDSample];
+                        }
+
+                        // Write Vitamin E to healthkit
+                        double vitaminE = ([[[out5 objectForKey:@"Vitamin E"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *vitaminEType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminE];
+                        HKQuantity *vitaminEQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:vitaminE];
+                        if(vitaminC != 0){
+                            metadata = [self ReturnMetadata:@"Vitamin E" date:DateStitch extra:nil];
+                            HKQuantitySample * vitaminESample = [HKQuantitySample quantitySampleWithType:vitaminEType quantity:vitaminEQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:vitaminESample];
+                        }
+
+                        // Write Iron to healthkit
+                        double iron = ([[[out5 objectForKey:@"Iron"] objectForKey:@"ammount"] doubleValue]/100)*2000;
+                        HKQuantityType *ironType = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron];
+                        HKQuantity *ironQuantity = [HKQuantity quantityWithUnit:[HKUnit unitFromString:@"mg"] doubleValue:iron];
+                        if(iron != 0){
+                            metadata = [self ReturnMetadata:@"Iron" date:DateStitch extra:nil];
+                            HKQuantitySample * ironSample = [HKQuantitySample quantitySampleWithType:ironType quantity:ironQuantity startDate:sampleDate endDate:sampleDate device:[self ReturnDeviceInfo:nil] metadata:metadata];
+                            [nutrientsArray addObject:ironSample];
+                        }
+                        
+                        // Write to healthkit
+                        [self->hkstore saveObjects:nutrientsArray withCompletion:^(BOOL success, NSError *error){
+                            //NSLog(@"%@", error);
+                        }];
+                    }
+                }
+            }
         }];
     }
 }
@@ -1121,7 +1289,9 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     if([energyArray count] > 0){
         // Add to healthkit
         [hkstore saveObjects:energyArray withCompletion:^(BOOL success, NSError *error){
-            if(error){ NSLog(@"%@", error); }
+            if(error){
+                NSLog(@"%@", error);
+            }
         }];
     }
 }
@@ -1470,6 +1640,16 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     [dateFormat setFormatterBehavior:NSDateFormatterBehaviorDefault];
     NSString *date = [dateFormat stringFromDate:dateTime];
     return date;
+}
+
+// Get json content from web server
+- (NSArray *) GetRequest:(NSURL *)url{
+    NSError *error = nil;
+    NSString *content = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
+    
+    NSData *jsonData = [content dataUsingEncoding:NSUTF8StringEncoding];
+    NSArray *results = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers|NSJSONReadingMutableLeaves error:&error];
+    return results;
 }
 
 // Get json content from web server
@@ -2039,8 +2219,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                                 [routeArray addObject:test];
                             }
                             
-                            NSLog(@"%lu %lu", (unsigned long)[routeArray count], (unsigned long)[heartArray count]);
-                            
                             if([heartArray count] == 0 && [routeArray count] == 0){
                                 dispatch_group_leave(group2);
                             }else if([heartArray count] == 0){
@@ -2293,6 +2471,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     dispatch_group_t group = dispatch_group_create();
     
     self->foundWorkout = 0;
+    self->foundnutrients = 0;
     __block NSMutableArray * prevTypes = [[NSMutableArray alloc] init];
     
     // Iterate over URLS
@@ -2301,6 +2480,10 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     for(NSMutableArray *testEnt in URLS){
         if([testEnt[1] isEqual:@"workout"]){
             self->foundWorkout = 1;
+        }
+        
+        if([testEnt[1] isEqual:@"nutrients"]){
+            self->foundnutrients = 1;
         }
     }
     
@@ -2528,7 +2711,16 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass],
                             [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex],
                             [HKObjectType workoutType],
-                            [HKSeriesType workoutRouteType]
+                            [HKSeriesType workoutRouteType],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCholesterol],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySugar],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCalcium],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryZinc],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminA],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminC],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminD],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminE],
+                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron]
                             ];
     
     NSArray *readTypes = @[
@@ -2547,7 +2739,16 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMass],
                            [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierBodyMassIndex],
                            [HKObjectType workoutType],
-                           [HKSeriesType workoutRouteType]
+                           [HKSeriesType workoutRouteType],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCholesterol],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySugar],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCalcium],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryZinc],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminA],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminC],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminD],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminE],
+                           [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron]
                            ];
     
     
@@ -2629,10 +2830,55 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                 HKAuthorizationStatus sodiumStatus = [self->hkstore authorizationStatusForType:sodium];
                 errorCount += [self checktype:sodiumStatus];
 
-                //Protein
+                // Protein
                 HKObjectType *protein = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryProtein];
                 HKAuthorizationStatus proteinStatus = [self->hkstore authorizationStatusForType:protein];
                 errorCount += [self checktype:proteinStatus];
+                
+                // Cholesterol
+                HKObjectType *cholesterol = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCholesterol];
+                HKAuthorizationStatus cholesterolStatus = [self->hkstore authorizationStatusForType:cholesterol];
+                errorCount += [self checktype:cholesterolStatus];
+                
+                // Sugar
+                HKObjectType *sugar = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietarySugar];
+                HKAuthorizationStatus sugarStatus = [self->hkstore authorizationStatusForType:sugar];
+                errorCount += [self checktype:sugarStatus];
+                
+                // Calcium
+                HKObjectType *calcium = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryCalcium];
+                HKAuthorizationStatus calciumStatus = [self->hkstore authorizationStatusForType:calcium];
+                errorCount += [self checktype:calciumStatus];
+                
+                // Zinc
+                HKObjectType *zinc = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryZinc];
+                HKAuthorizationStatus zincStatus = [self->hkstore authorizationStatusForType:zinc];
+                errorCount += [self checktype:zincStatus];
+                
+                // Vitamin A
+                HKObjectType *vitaminA = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminA];
+                HKAuthorizationStatus vitaminAStatus = [self->hkstore authorizationStatusForType:vitaminA];
+                errorCount += [self checktype:vitaminAStatus];
+                
+                // Vitamin C
+                HKObjectType *vitaminC = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminC];
+                HKAuthorizationStatus vitaminCStatus = [self->hkstore authorizationStatusForType:vitaminC];
+                errorCount += [self checktype:vitaminCStatus];
+                
+                // Vitamin D
+                HKObjectType *vitaminD = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminD];
+                HKAuthorizationStatus vitaminDStatus = [self->hkstore authorizationStatusForType:vitaminD];
+                errorCount += [self checktype:vitaminDStatus];
+                
+                // Vitamin E
+                HKObjectType *vitaminE = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryVitaminE];
+                HKAuthorizationStatus vitaminEStatus = [self->hkstore authorizationStatusForType:vitaminE];
+                errorCount += [self checktype:vitaminEStatus];
+                
+                // Iron
+                HKObjectType *iron = [HKObjectType quantityTypeForIdentifier:HKQuantityTypeIdentifierDietaryIron];
+                HKAuthorizationStatus ironStatus = [self->hkstore authorizationStatusForType:iron];
+                errorCount += [self checktype:ironStatus];
             }
             
             if(self->distanceSwitch){
