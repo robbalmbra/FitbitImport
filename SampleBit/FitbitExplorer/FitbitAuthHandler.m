@@ -71,7 +71,10 @@
     SFSafariViewController *authorizationViewController = [[SFSafariViewController alloc] initWithURL:url];
     authorizationViewController.delegate = self;
     authorizationVC = authorizationViewController;
-    [viewController presentViewController:authorizationViewController animated:YES completion:nil];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [viewController presentViewController:authorizationViewController animated:YES completion:nil];
+    });
 }
 
 -(NSString *)extractCode:(NSNotification *)notification Key:(NSString *)key{

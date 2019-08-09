@@ -2073,9 +2073,11 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     NSString *elevation = [entry objectForKey:@"elevationGain"];
     if(elevation != nil){
         if([elevation doubleValue] < 0){
-            [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationDescended];
+            totalDistance = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:[elevation doubleValue]];
+            [MetaOptions setObject:totalDistance forKey:HKMetadataKeyElevationDescended];
         }else{
-            [MetaOptions setObject:elevation forKey:HKMetadataKeyElevationAscended];
+            totalDistance = [HKQuantity quantityWithUnit:[HKUnit meterUnit] doubleValue:[elevation doubleValue]];
+            [MetaOptions setObject:totalDistance forKey:HKMetadataKeyElevationAscended];
         }
     }
 
@@ -2175,8 +2177,6 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
     __block double distance;
     HKWorkout *workout;
     double averageHeartRate;
-
-    typeof(self) __weak weakSelf = self;
 
     for(NSDictionary * entry in activities){
 
@@ -2595,7 +2595,7 @@ typedef void (^QueryCompletionBlock)(NSInteger count, NSMutableArray * data, NSE
                     @catch (NSException *exception){
                         // Catch if failed
                         NSString * methodError = AS(AS(@"Error - Failed to find method `",methodName),@"`.");
-                        NSLog(@"%@", exception);
+                        NSLog(@"Method error - %@", exception);
                         [self logText:methodError reset:0];
                     }
                 }
