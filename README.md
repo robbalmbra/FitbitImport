@@ -5,10 +5,10 @@
 IOS application that bridges the gap between Fitbit data and HealthKit. Through Fitbit's api plenty of data can be requested through the Oauth service.
 
 <div>
-<img align="left" src="images/home.png" style="margin-top:5px;">
-<img align="left" src="images/settings.png" style="margin-top:5px;">
-<img align="left" src="images/log.png" style="margin-top:5px;">
-<img align="left" src="images/route.png" style="margin-top:5px;">
+<img align="left" src="images/home.png" style="margin-bottom:5px;">
+<img align="left" src="images/settings.png" style="margin-bottom:5px;">
+<img align="left" src="images/log.png" style="margin-bottom:5px;">
+<img align="left" src="images/route.png" style="margin-bottom:5px;">
 </div>
 <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
 
