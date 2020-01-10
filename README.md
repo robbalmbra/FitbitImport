@@ -11,6 +11,7 @@ IOS application that bridges the gap between Fitbit data and HealthKit. Through 
 <img align="left" src="images/route.png" style="margin-top:5px;">
 </div>
 
+<div>
 ## Features
 
  The app can be used to retrieve at different resolutions:
@@ -35,6 +36,7 @@ IOS application that bridges the gap between Fitbit data and HealthKit. Through 
   As well as the above features, the app is designed to backup user data as historic data, allowing the user to remove the app and restore data back to the device.
 
   Detection of data that has been added to HealthKit allows less requests to the API, exhausting the API rate limit at a much lower rate.
+<div>
 
 ## Updates
 
