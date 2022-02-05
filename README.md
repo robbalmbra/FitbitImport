@@ -6,11 +6,11 @@ IOS application that bridges the gap between Fitbit data and HealthKit. Through 
 
 <div>
 <table style="overflow:revert; border:none;">
- <tr><td><img align="left" src="images/home.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td><td><img align="left" src="images/settings.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td>
+ <tr><td style="bordder:none;"><img align="left" src="images/home.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td><td><img align="left" src="images/settings.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td>
 
-<td><img align="left" src="images/log.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td></tr>
+<td style="bordder:none;"><img align="left" src="images/log.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td></tr>
 
-<tr><td><img align="left" src="images/route.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td></tr>
+<tr><td style="bordder:none;"><img align="left" src="images/route.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td></tr>
  </table>
 </div>
 <div style="height:500px;margin-top:200px">
