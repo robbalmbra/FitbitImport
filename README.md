@@ -13,9 +13,6 @@ IOS application that bridges the gap between Fitbit data and HealthKit. Through 
 <tr><td style="border:none !important;"><img align="left" src="images/route.png" style="float:left;margin-bottom:5px; padding-bottom:5px;"></td></tr>
  </table>
 </div>
-<div style="height:500px;margin-top:200px">
-&nbsp;                             
-</div>
 
 ## Features
 
