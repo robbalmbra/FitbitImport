@@ -6,9 +6,9 @@ IOS application that bridges the gap between Fitbit data and HealthKit. Through 
 
 <div>
 <table>
- <tr><td><img align="left" src="images/home.png"></td><td><img align="left" src="images/settings.png" padding-bottom:5px;"></td>
+ <tr><td width="30%"><img align="left" src="images/home.png"></td><td width="30%"><img align="left" src="images/settings.png" padding-bottom:5px;"></td>
 
-<td><img align="left" src="images/log.png"></td></tr>
+<td width="30%"><img align="left" src="images/log.png"></td></tr>
 
 <tr><td><img align="left" src="images/route.png"></td></tr>
  </table>
