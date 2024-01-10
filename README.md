@@ -6,7 +6,7 @@ IOS application that bridges the gap between Fitbit data and HealthKit. Through 
 
 <div>
 <table width="90%">
- <tr><td width="30%"><img align="left" src="images/home.png"></td><td width="30%"><img align="left" src="images/settings.png" padding-bottom:5px;"></td>
+ <tr><td width="30%"><img align="left" src="images/home.png"></td><td width="30%"><img align="left" src="images/settings.png"></td>
 
 <td width="30%"><img align="left" src="images/log.png"></td></tr>
 
